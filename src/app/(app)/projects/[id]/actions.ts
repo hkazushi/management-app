@@ -166,3 +166,127 @@ export async function deleteResource(projectId: string, resourceId: string) {
   await supabase.from("project_resources").delete().eq("id", resourceId);
   revalidatePath(`/projects/${projectId}`);
 }
+
+// AIサマリー（spec §3.4）。サーバー側でのみ ANTHROPIC_API_KEY を使用。
+// 材料: その案件の activity_log・タスク・フェーズ。結果は projects.summary にキャッシュ。
+export type SummaryState = { error: string };
+
+export async function generateSummary(
+  projectId: string,
+  _prev: SummaryState,
+  _formData: FormData,
+): Promise<SummaryState> {
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return {
+      error:
+        "ANTHROPIC_API_KEY が未設定です（Vercel と .env.local に設定してください）。",
+    };
+  }
+
+  const supabase = await createClient();
+  const { data: proj } = await supabase
+    .from("projects")
+    .select("name,client,status,note,due_date")
+    .eq("id", projectId)
+    .single();
+  if (!proj) return { error: "案件が見つかりません。" };
+  const p = proj as Record<string, unknown>;
+
+  const { data: phasesRaw } = await supabase
+    .from("phases")
+    .select("name,status,position")
+    .eq("project_id", projectId)
+    .order("position");
+  const phases =
+    (phasesRaw as { name: string; status: string }[] | null) ?? [];
+
+  const { data: tasksRaw } = await supabase
+    .from("tasks")
+    .select("title,status,priority,due_date")
+    .eq("project_id", projectId);
+  const tasks =
+    (tasksRaw as {
+      title: string;
+      status: string;
+      priority: string;
+      due_date: string | null;
+    }[] | null) ?? [];
+
+  const { data: actsRaw } = await supabase
+    .from("activity_log")
+    .select("action,detail,created_at,source")
+    .eq("project_id", projectId)
+    .order("created_at", { ascending: false })
+    .limit(20);
+  const acts =
+    (actsRaw as {
+      action: string;
+      detail: string | null;
+      created_at: string;
+    }[] | null) ?? [];
+
+  const doneCount = tasks.filter((t) => t.status === "done").length;
+  const userContent = [
+    `案件名: ${p.name}`,
+    p.client ? `クライアント: ${p.client}` : "",
+    `ステータス: ${p.status}`,
+    p.due_date ? `期限: ${p.due_date}` : "",
+    p.note ? `メモ: ${p.note}` : "",
+    "",
+    `フェーズ(${phases.length}): ${phases.map((ph) => `${ph.name}[${ph.status}]`).join(" / ")}`,
+    `タスク: 全${tasks.length}件・完了${doneCount}件`,
+    ...tasks
+      .slice(0, 40)
+      .map(
+        (t) =>
+          `  - [${t.status}] ${t.title}${t.due_date ? `（〆${t.due_date}）` : ""}`,
+      ),
+    "",
+    `最近の活動(${acts.length}):`,
+    ...acts.map(
+      (a) =>
+        `  - ${a.created_at.slice(0, 10)} ${a.action}${a.detail ? `: ${a.detail}` : ""}`,
+    ),
+  ]
+    .filter((l) => l !== "")
+    .join("\n");
+
+  let res: Response;
+  try {
+    res = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 600,
+        system:
+          "あなたは案件管理アシスタントです。与えられた事実だけを根拠に、案件の『現状・進捗・次にやるべきこと』を日本語で簡潔に（3〜6文）まとめてください。完了や成否を勝手に断定せず、事実ベースで書くこと。",
+        messages: [{ role: "user", content: userContent }],
+      }),
+    });
+  } catch {
+    return { error: "Anthropic API への接続に失敗しました。" };
+  }
+
+  if (!res.ok) {
+    return { error: `生成に失敗しました（HTTP ${res.status}）。` };
+  }
+
+  const data = (await res.json()) as {
+    content?: { type: string; text?: string }[];
+  };
+  const text = (data.content?.[0]?.text ?? "").trim();
+  if (!text) return { error: "空の応答が返りました。" };
+
+  await supabase
+    .from("projects")
+    .update({ summary: text, summary_updated_at: new Date().toISOString() })
+    .eq("id", projectId);
+  revalidatePath(`/projects/${projectId}`);
+  return { error: "" };
+}

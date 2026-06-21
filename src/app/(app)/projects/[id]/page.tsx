@@ -12,6 +12,7 @@ import { AddTaskForm } from "@/components/AddTaskForm";
 import { TaskItem } from "@/components/TaskItem";
 import { AddResourceForm } from "@/components/AddResourceForm";
 import { ResourceItem } from "@/components/ResourceItem";
+import { SummaryButton } from "@/components/SummaryButton";
 import type {
   Database,
   PhaseStatus,
@@ -158,6 +159,28 @@ export default async function ProjectDetailPage({
           action={deleteProject.bind(null, id)}
           name={project.name}
         />
+      </div>
+
+      {/* AIサマリー（spec §3.4） */}
+      <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-semibold text-ink">AIサマリー</h2>
+          {project.summary_updated_at && (
+            <span className="text-[11px] text-muted">
+              更新 {String(project.summary_updated_at).slice(0, 10)}
+            </span>
+          )}
+        </div>
+        {project.summary ? (
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
+            {project.summary}
+          </p>
+        ) : (
+          <p className="text-sm text-muted">
+            ボタンで現状サマリーを生成します（フェーズ・タスク・活動ログを材料に）。
+          </p>
+        )}
+        <SummaryButton projectId={id} hasSummary={!!project.summary} />
       </div>
 
       {/* フェーズ進捗 */}
