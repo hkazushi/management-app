@@ -1,5 +1,6 @@
 // DB 型定義（spec §5 のスキーマに対応）。
 // 最初は手書き。Supabase CLI 導入後は `supabase gen types typescript` で置換可能。
+// 各テーブル/ビューに Relationships を持たせる（supabase-js の結果型推論に必要）。
 
 export type ProjectStatus =
   | "draft"
@@ -32,6 +33,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["categories"]["Insert"]>;
+        Relationships: [];
       };
       projects: {
         Row: {
@@ -63,6 +65,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["projects"]["Insert"]>;
+        Relationships: [];
       };
       phases: {
         Row: {
@@ -84,6 +87,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["phases"]["Insert"]>;
+        Relationships: [];
       };
       tasks: {
         Row: {
@@ -113,6 +117,7 @@ export interface Database {
           created_at?: string;
         };
         Update: Partial<Database["public"]["Tables"]["tasks"]["Insert"]>;
+        Relationships: [];
       };
       project_resources: {
         Row: {
@@ -140,6 +145,7 @@ export interface Database {
         Update: Partial<
           Database["public"]["Tables"]["project_resources"]["Insert"]
         >;
+        Relationships: [];
       };
       activity_log: {
         Row: {
@@ -162,9 +168,8 @@ export interface Database {
           session_id?: string | null;
           created_at?: string;
         };
-        Update: Partial<
-          Database["public"]["Tables"]["activity_log"]["Insert"]
-        >;
+        Update: Partial<Database["public"]["Tables"]["activity_log"]["Insert"]>;
+        Relationships: [];
       };
     };
     Views: {
@@ -176,9 +181,11 @@ export interface Database {
           total_count: number;
           progress_pct: number;
         };
+        Relationships: [];
       };
     };
     Functions: Record<string, never>;
     Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 }
