@@ -252,35 +252,70 @@ export async function generateSummary(
     .filter((l) => l !== "")
     .join("\n");
 
-  let res: Response;
+  const SYSTEM =
+    "あなたは案件管理アシスタントです。与えられた事実だけを根拠に、案件の『現状・進捗・次にやるべきこと』を日本語で簡潔に（3〜6文）まとめてください。完了や成否を勝手に断定せず、事実ベースで書くこと。";
+
+  // キーの種類で接続先を自動切替（sk-or-=OpenRouter経由Claude / それ以外=直Anthropic）
+  const useOpenRouter = apiKey.startsWith("sk-or-");
+  let text = "";
   try {
-    res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 600,
-        system:
-          "あなたは案件管理アシスタントです。与えられた事実だけを根拠に、案件の『現状・進捗・次にやるべきこと』を日本語で簡潔に（3〜6文）まとめてください。完了や成否を勝手に断定せず、事実ベースで書くこと。",
-        messages: [{ role: "user", content: userContent }],
-      }),
-    });
+    if (useOpenRouter) {
+      const res = await fetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            model: "anthropic/claude-haiku-4.5",
+            max_tokens: 600,
+            messages: [
+              { role: "system", content: SYSTEM },
+              { role: "user", content: userContent },
+            ],
+          }),
+        },
+      );
+      if (!res.ok) {
+        return { error: `生成に失敗しました（HTTP ${res.status}）。` };
+      }
+      const data = (await res.json()) as {
+        choices?: { message?: { content?: string } }[];
+        error?: { message?: string };
+      };
+      if (data.error) {
+        return { error: `生成に失敗しました: ${data.error.message ?? ""}` };
+      }
+      text = (data.choices?.[0]?.message?.content ?? "").trim();
+    } else {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": apiKey,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 600,
+          system: SYSTEM,
+          messages: [{ role: "user", content: userContent }],
+        }),
+      });
+      if (!res.ok) {
+        return { error: `生成に失敗しました（HTTP ${res.status}）。` };
+      }
+      const data = (await res.json()) as {
+        content?: { type: string; text?: string }[];
+      };
+      text = (data.content?.[0]?.text ?? "").trim();
+    }
   } catch {
-    return { error: "Anthropic API への接続に失敗しました。" };
+    return { error: "AI API への接続に失敗しました。" };
   }
 
-  if (!res.ok) {
-    return { error: `生成に失敗しました（HTTP ${res.status}）。` };
-  }
-
-  const data = (await res.json()) as {
-    content?: { type: string; text?: string }[];
-  };
-  const text = (data.content?.[0]?.text ?? "").trim();
   if (!text) return { error: "空の応答が返りました。" };
 
   await supabase
