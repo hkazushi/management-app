@@ -1,4 +1,9 @@
-import type { ProjectStatus, TaskPriority } from "@/types/database";
+import type {
+  ProjectStatus,
+  PhaseStatus,
+  TaskStatus,
+  TaskPriority,
+} from "@/types/database";
 
 // 案件ステータスの表示メタ（spec §3.1）
 export const PROJECT_STATUS_META: Record<
@@ -12,7 +17,6 @@ export const PROJECT_STATUS_META: Record<
   archived: { label: "アーカイブ", badge: "bg-muted/10 text-muted" },
 };
 
-// 案件作成/編集フォームで選べるステータス
 export const PROJECT_STATUS_OPTIONS: ProjectStatus[] = [
   "draft",
   "active",
@@ -31,9 +35,50 @@ export const DEFAULT_CATEGORIES: { name: string; color: string }[] = [
   { name: "自社開発", color: "#E94E77" },
 ];
 
-// タスク優先度（ステップ4で使用）
-export const PRIORITY_META: Record<TaskPriority, { label: string }> = {
-  low: { label: "低" },
-  mid: { label: "中" },
-  high: { label: "高" },
+// 案件作成時に自動生成するデフォルトフェーズ（spec §3.2）
+export const DEFAULT_PHASES: string[] = [
+  "ヒアリング",
+  "設計",
+  "デザイン",
+  "実装",
+  "テスト",
+  "公開",
+  "保守",
+];
+
+// フェーズ状態（spec §3.2）
+export const PHASE_STATUS_META: Record<
+  PhaseStatus,
+  { label: string; dot: string; text: string }
+> = {
+  not_started: { label: "未着手", dot: "bg-muted/40", text: "text-muted" },
+  in_progress: { label: "進行中", dot: "bg-primary", text: "text-primary" },
+  done: { label: "完了", dot: "bg-success", text: "text-success" },
 };
+export const PHASE_STATUS_OPTIONS: PhaseStatus[] = [
+  "not_started",
+  "in_progress",
+  "done",
+];
+
+// タスク状態（spec §3.3）
+export const TASK_STATUS_META: Record<
+  TaskStatus,
+  { label: string; badge: string }
+> = {
+  todo: { label: "未着手", badge: "bg-muted/10 text-muted" },
+  doing: { label: "作業中", badge: "bg-primary/10 text-primary" },
+  done: { label: "完了", badge: "bg-success/10 text-success" },
+};
+export const TASK_STATUS_OPTIONS: TaskStatus[] = ["todo", "doing", "done"];
+
+// タスク優先度（spec §3.3）
+export const PRIORITY_META: Record<
+  TaskPriority,
+  { label: string; badge: string }
+> = {
+  low: { label: "低", badge: "bg-muted/10 text-muted" },
+  mid: { label: "中", badge: "bg-warning/15 text-warning" },
+  high: { label: "高", badge: "bg-danger/10 text-danger" },
+};
+export const PRIORITY_OPTIONS: TaskPriority[] = ["low", "mid", "high"];
