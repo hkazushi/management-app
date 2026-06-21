@@ -3,6 +3,7 @@ import type {
   PhaseStatus,
   TaskStatus,
   TaskPriority,
+  ResourceType,
 } from "@/types/database";
 
 // 案件ステータスの表示メタ（spec §3.1）
@@ -82,3 +83,14 @@ export const PRIORITY_META: Record<
   high: { label: "高", badge: "bg-danger/10 text-danger" },
 };
 export const PRIORITY_OPTIONS: TaskPriority[] = ["low", "mid", "high"];
+
+// リソース種別（spec §3.5）。パスワード本体は保存しない。
+export const RESOURCE_TYPE_META: Record<
+  ResourceType,
+  { label: string; icon: string }
+> = {
+  link: { label: "リンク", icon: "🔗" },
+  account: { label: "アカウント", icon: "👤" },
+  tool: { label: "ツール", icon: "🛠" },
+};
+export const RESOURCE_TYPE_OPTIONS: ResourceType[] = ["link", "account", "tool"];

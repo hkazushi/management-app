@@ -3,7 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { DEFAULT_PHASES } from "@/lib/constants";
-import type { PhaseStatus, TaskStatus, TaskPriority } from "@/types/database";
+import type {
+  PhaseStatus,
+  TaskStatus,
+  TaskPriority,
+  ResourceType,
+} from "@/types/database";
 
 // 案件にフェーズが1つも無ければデフォルト7工程を生成（冪等・spec §3.2）
 export async function ensureDefaultPhases(projectId: string) {
@@ -137,5 +142,27 @@ export async function moveTask(
   const b = list[swapIdx];
   await supabase.from("tasks").update({ sort_order: b.sort_order }).eq("id", a.id);
   await supabase.from("tasks").update({ sort_order: a.sort_order }).eq("id", b.id);
+  revalidatePath(`/projects/${projectId}`);
+}
+
+// 情報集約（spec §3.5）。パスワード本体は保存しない＝フォームにパスワード欄を作らない。
+export async function createResource(projectId: string, formData: FormData) {
+  const type = String(formData.get("type") ?? "link") as ResourceType;
+  const label = String(formData.get("label") ?? "").trim();
+  if (!label) return;
+  const url = String(formData.get("url") ?? "").trim() || null;
+  const account = String(formData.get("account") ?? "").trim() || null;
+  const note = String(formData.get("note") ?? "").trim() || null;
+
+  const supabase = await createClient();
+  await supabase
+    .from("project_resources")
+    .insert({ project_id: projectId, type, label, url, account, note });
+  revalidatePath(`/projects/${projectId}`);
+}
+
+export async function deleteResource(projectId: string, resourceId: string) {
+  const supabase = await createClient();
+  await supabase.from("project_resources").delete().eq("id", resourceId);
   revalidatePath(`/projects/${projectId}`);
 }

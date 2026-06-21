@@ -10,11 +10,14 @@ import { PhaseStepper } from "@/components/PhaseStepper";
 import { PhaseStatusSelect } from "@/components/PhaseStatusSelect";
 import { AddTaskForm } from "@/components/AddTaskForm";
 import { TaskItem } from "@/components/TaskItem";
+import { AddResourceForm } from "@/components/AddResourceForm";
+import { ResourceItem } from "@/components/ResourceItem";
 import type {
   Database,
   PhaseStatus,
   TaskStatus,
   TaskPriority,
+  ResourceType,
 } from "@/types/database";
 
 type Project = Database["public"]["Tables"]["projects"]["Row"];
@@ -35,6 +38,14 @@ type Task = {
   sort_order: number;
 };
 type Prog = { phase_id: string; total_count: number; progress_pct: number };
+type Resource = {
+  id: string;
+  type: ResourceType;
+  label: string;
+  url: string | null;
+  account: string | null;
+  note: string | null;
+};
 
 export default async function ProjectDetailPage({
   params,
@@ -84,6 +95,13 @@ export default async function ProjectDetailPage({
   const progMap = new Map(
     ((progRaw as Prog[] | null) ?? []).map((p) => [p.phase_id, p]),
   );
+
+  const { data: resRaw } = await supabase
+    .from("project_resources")
+    .select("id,type,label,url,account,note")
+    .eq("project_id", id)
+    .order("created_at");
+  const resources = (resRaw as Resource[] | null) ?? [];
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
@@ -183,6 +201,25 @@ export default async function ProjectDetailPage({
             </div>
           );
         })}
+      </div>
+
+      {/* 情報・リソース（spec §3.5） */}
+      <div className="space-y-2.5 rounded-2xl border border-border bg-surface/60 p-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-semibold text-ink">情報・リソース</h2>
+          <span className="text-xs text-muted">リンク / アカウント / ツール</span>
+        </div>
+        {resources.length > 0 && (
+          <div className="space-y-1.5">
+            {resources.map((r) => (
+              <ResourceItem key={r.id} projectId={id} resource={r} />
+            ))}
+          </div>
+        )}
+        <AddResourceForm projectId={id} />
+        <p className="text-[11px] text-muted">
+          パスワード本体は保存しません（パスワードマネージャーの所在をメモするだけ）。
+        </p>
       </div>
     </section>
   );
