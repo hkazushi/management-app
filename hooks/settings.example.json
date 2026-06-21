@@ -1,0 +1,29 @@
+{
+  "_comment": "~/.claude/settings.json に hooks をマージする例（spec §6.4）。既存キーは保持すること。",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/kazushi/.claude/hooks/project-upsert.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/Users/kazushi/.claude/hooks/log-commit.sh",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}
