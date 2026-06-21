@@ -22,7 +22,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-dvh pb-24">
-      <header className="sticky top-0 z-20 border-b border-border bg-bg/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-20 border-b border-white/10 bg-bg/70 backdrop-blur-xl">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white shadow-glow">

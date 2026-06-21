@@ -27,7 +27,7 @@ export function ResourceItem({
   resource: Resource;
 }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card">
+    <div className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
       <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
         <Icon name={typeIcon[resource.type] ?? "link"} size={15} />
       </span>

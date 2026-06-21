@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 /*
-  warm / vibrant パレット（spec §4）。可読性とコントラストを重視して再設計。
+  ダーク×ネオン（プレミアム）。濃紺〜黒背景＋ガラス調カード＋発光アクセント（オレンジ/シアン）。
   rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 252 248 243; /* 温かみのある生成り背景 */
-  --surface: 255 255 255; /* カード面 */
-  --elevated: 255 251 246; /* わずかに浮いた面 */
-  --border: 236 227 216; /* やわらかい境界 */
-  --ink: 35 28 24; /* 主要テキスト（こげ茶寄りの黒） */
-  --muted: 120 106 96; /* 補助テキスト */
-  --faint: 165 152 141; /* さらに薄いテキスト */
+  --bg: 10 13 24; /* 濃紺〜黒 */
+  --surface: 24 29 48; /* ソリッドなカード面（必要時） */
+  --elevated: 30 36 58;
+  --border: 56 64 92; /* 微かな境界（白10%相当の見え方） */
+  --ink: 236 240 250; /* ほぼ白 */
+  --muted: 150 162 190; /* 青みグレー */
+  --faint: 108 120 150;
 
-  --primary: 245 124 52; /* 鮮やかなオレンジ */
-  --primary-deep: 224 96 28; /* 濃いオレンジ（ホバー/強調） */
-  --accent: 233 78 119; /* ピンク系アクセント */
+  --primary: 255 138 76; /* ネオンオレンジ */
+  --primary-deep: 255 110 48;
+  --accent: 56 224 232; /* ネオンシアン */
 
-  --success: 22 163 113;
-  --warning: 217 145 22;
-  --danger: 224 74 74;
+  --success: 52 211 153;
+  --warning: 251 191 36;
+  --danger: 248 113 113;
 }
 
 html,
@@ -32,8 +32,9 @@ body {
 
 body {
   background:
-    radial-gradient(1200px 600px at 100% -10%, rgb(var(--primary) / 0.06), transparent 60%),
-    radial-gradient(1000px 500px at -10% 0%, rgb(var(--accent) / 0.05), transparent 55%),
+    radial-gradient(900px 500px at 100% -5%, rgb(var(--primary) / 0.16), transparent 60%),
+    radial-gradient(900px 520px at -8% 4%, rgb(var(--accent) / 0.12), transparent 58%),
+    radial-gradient(700px 700px at 50% 120%, rgb(var(--accent) / 0.08), transparent 60%),
     rgb(var(--bg));
   background-attachment: fixed;
   color: rgb(var(--ink));
@@ -42,20 +43,38 @@ body {
 }
 
 @layer components {
+  /* ガラスカード：半透明＋ブラー＋微発光ボーダー */
   .card {
-    @apply rounded-2xl border border-border bg-surface shadow-card;
+    @apply rounded-2xl shadow-card backdrop-blur-xl;
+    background: rgb(255 255 255 / 0.045);
+    border: 1px solid rgb(255 255 255 / 0.1);
+  }
+  .glass {
+    @apply backdrop-blur-xl;
+    background: rgb(255 255 255 / 0.045);
+    border: 1px solid rgb(255 255 255 / 0.1);
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition active:scale-[0.98] hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition active:scale-[0.98] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm font-medium text-ink transition hover:border-primary/40 hover:bg-primary/5;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium text-ink transition;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.12);
   }
-  .btn-icon {
-    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-ink/5 hover:text-ink;
+  .btn-ghost:hover {
+    background: rgb(var(--primary) / 0.1);
+    border-color: rgb(var(--primary) / 0.4);
   }
   .input {
-    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint focus:border-primary focus:ring-4 focus:ring-primary/10;
+    @apply w-full rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint;
+    background: rgb(255 255 255 / 0.06);
+    border: 1px solid rgb(255 255 255 / 0.12);
+  }
+  .input:focus {
+    border-color: rgb(var(--accent) / 0.6);
+    background: rgb(255 255 255 / 0.09);
+    box-shadow: 0 0 0 4px rgb(var(--accent) / 0.15);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
@@ -63,4 +82,15 @@ body {
   .section-label {
     @apply text-xs font-semibold uppercase tracking-wider text-faint;
   }
+  /* ダッシュボードの統計カード */
+  .stat-card {
+    @apply rounded-2xl p-4 backdrop-blur-xl;
+    background: rgb(255 255 255 / 0.045);
+    border: 1px solid rgb(255 255 255 / 0.1);
+  }
+}
+
+/* select の選択肢はダーク背景だと白地になるブラウザ向けに調整 */
+select option {
+  color: #1a1a1a;
 }

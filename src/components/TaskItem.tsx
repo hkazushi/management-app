@@ -38,7 +38,7 @@ export function TaskItem({
   const done = task.status === "done";
 
   return (
-    <div className="group flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card transition hover:border-primary/30">
+    <div className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition hover:border-primary/30 hover:bg-white/[0.07]">
       {/* 完了トグル（手動のみ） */}
       <form action={toggleTaskDone.bind(null, projectId, task.id, !done)}>
         <button

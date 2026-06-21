@@ -145,8 +145,9 @@ export default async function ProjectsPage({
               <li key={p.id}>
                 <Link
                   href={`/projects/${p.id}`}
+                  style={cat ? { borderLeft: `3px solid ${cat.color}` } : undefined}
                   className={`card block p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-pop ${
-                    isDraft ? "opacity-60" : ""
+                    isDraft ? "opacity-55" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">

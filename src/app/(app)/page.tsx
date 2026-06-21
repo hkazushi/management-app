@@ -15,6 +15,49 @@ type ProjRow = { id: string; name: string; status: string; created_at: string };
 
 const STALE_DAYS = 14;
 
+type Tone = "primary" | "danger" | "warning" | "accent";
+const toneText: Record<Tone, string> = {
+  primary: "text-primary",
+  danger: "text-danger",
+  warning: "text-warning",
+  accent: "text-accent",
+};
+const toneGlow: Record<Tone, string> = {
+  primary: "bg-primary/20",
+  danger: "bg-danger/20",
+  warning: "bg-warning/20",
+  accent: "bg-accent/20",
+};
+
+function StatCard({
+  label,
+  value,
+  icon,
+  tone,
+}: {
+  label: string;
+  value: number;
+  icon: "projects" | "alert" | "today" | "flag";
+  tone: Tone;
+}) {
+  return (
+    <div className="stat-card relative overflow-hidden">
+      <div
+        className={`pointer-events-none absolute -right-6 -top-8 h-20 w-20 rounded-full blur-2xl ${toneGlow[tone]}`}
+      />
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-medium text-muted">{label}</span>
+        <span className={toneText[tone]}>
+          <Icon name={icon} size={16} />
+        </span>
+      </div>
+      <p className={`mt-1 text-3xl font-bold tabular-nums ${toneText[tone]}`}>
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function TaskRowView({
   t,
   projectName,
@@ -29,22 +72,22 @@ function TaskRowView({
       ? "text-danger"
       : tone === "warning"
         ? "text-warning"
-        : "text-muted";
+        : "text-faint";
   return (
     <Link
       href={`/projects/${t.project_id}`}
-      className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card transition hover:border-primary/30"
+      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition hover:border-primary/30 hover:bg-white/[0.07]"
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-ink">{t.title}</p>
         <p className="truncate text-xs text-muted">{projectName}</p>
       </div>
       <span
-        className={`rounded-md px-1.5 py-0.5 text-xs font-medium ${PRIORITY_META[t.priority].badge}`}
+        className={`chip ${PRIORITY_META[t.priority].badge}`}
       >
         {PRIORITY_META[t.priority].label}
       </span>
-      <span className={`whitespace-nowrap text-xs font-medium ${toneCls}`}>
+      <span className={`whitespace-nowrap text-xs font-semibold ${toneCls}`}>
         {t.due_date}
       </span>
     </Link>
@@ -70,12 +113,14 @@ export default async function TodayPage() {
     .select("id,name,status,created_at");
   const projects = (pRaw as ProjRow[] | null) ?? [];
   const pName = new Map(projects.map((p) => [p.id, p.name]));
+  const activeCount = projects.filter((p) => p.status === "active").length;
 
   const { data: aRaw } = await supabase
     .from("activity_log")
     .select("project_id,created_at")
     .order("created_at", { ascending: false });
-  const acts = (aRaw as { project_id: string | null; created_at: string }[] | null) ?? [];
+  const acts =
+    (aRaw as { project_id: string | null; created_at: string }[] | null) ?? [];
   const lastAct = new Map<string, string>();
   for (const a of acts) {
     if (a.project_id && !lastAct.has(a.project_id))
@@ -104,21 +149,25 @@ export default async function TodayPage() {
         <p className="mt-0.5 text-sm text-muted">{today}</p>
       </div>
 
+      {/* 統計ダッシュボード */}
+      <div className="grid grid-cols-2 gap-3">
+        <StatCard label="進行中の案件" value={activeCount} icon="projects" tone="primary" />
+        <StatCard label="期限超過" value={overdue.length} icon="alert" tone="danger" />
+        <StatCard label="今日が期限" value={todayTasks.length} icon="today" tone="warning" />
+        <StatCard label="放置案件" value={stale.length} icon="flag" tone="accent" />
+      </div>
+
       {/* 横断検索 */}
       <form action="/search" className="relative">
         <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint">
           <Icon name="search" size={17} />
         </span>
-        <input
-          name="q"
-          placeholder="案件・タスクを検索"
-          className="input pl-9"
-        />
+        <input name="q" placeholder="案件・タスクを検索" className="input pl-9" />
       </form>
 
       {/* 放置案件アラート */}
       {stale.length > 0 && (
-        <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning/8 p-4 shadow-card">
+        <div className="space-y-2 rounded-2xl border border-warning/30 bg-warning/10 p-4 backdrop-blur-xl">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-warning">
             <Icon name="alert" size={16} />
             {STALE_DAYS}日以上動きのない案件（{stale.length}）
@@ -128,7 +177,7 @@ export default async function TodayPage() {
               <Link
                 key={p.id}
                 href={`/projects/${p.id}`}
-                className="rounded-full border border-warning/40 px-3 py-1 text-xs text-ink"
+                className="rounded-full border border-warning/40 bg-warning/10 px-3 py-1 text-xs text-ink"
               >
                 {p.name}（{p.days}日）
               </Link>
@@ -137,65 +186,47 @@ export default async function TodayPage() {
         </div>
       )}
 
-      {/* 期限超過 */}
       {overdue.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-danger">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-danger">
+            <Icon name="alert" size={15} />
             期限超過（{overdue.length}）
           </h2>
           <div className="space-y-1.5">
             {overdue.map((t) => (
-              <TaskRowView
-                key={t.id}
-                t={t}
-                projectName={pName.get(t.project_id) ?? ""}
-                tone="danger"
-              />
+              <TaskRowView key={t.id} t={t} projectName={pName.get(t.project_id) ?? ""} tone="danger" />
             ))}
           </div>
         </div>
       )}
 
-      {/* 今日 */}
       {todayTasks.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-warning">
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-warning">
+            <Icon name="today" size={15} />
             今日が期限（{todayTasks.length}）
           </h2>
           <div className="space-y-1.5">
             {todayTasks.map((t) => (
-              <TaskRowView
-                key={t.id}
-                t={t}
-                projectName={pName.get(t.project_id) ?? ""}
-                tone="warning"
-              />
+              <TaskRowView key={t.id} t={t} projectName={pName.get(t.project_id) ?? ""} tone="warning" />
             ))}
           </div>
         </div>
       )}
 
-      {/* 今後 */}
       {upcoming.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-muted">
-            今後の予定（{upcoming.length}）
-          </h2>
+          <h2 className="section-label">今後の予定（{upcoming.length}）</h2>
           <div className="space-y-1.5">
             {upcoming.slice(0, 20).map((t) => (
-              <TaskRowView
-                key={t.id}
-                t={t}
-                projectName={pName.get(t.project_id) ?? ""}
-                tone="muted"
-              />
+              <TaskRowView key={t.id} t={t} projectName={pName.get(t.project_id) ?? ""} tone="muted" />
             ))}
           </div>
         </div>
       )}
 
       {tasks.length === 0 && stale.length === 0 && (
-        <div className="rounded-2xl border border-dashed border-border p-8 text-center text-sm text-muted">
+        <div className="card p-8 text-center text-sm text-muted">
           期限付きの未完了タスクはありません。案件のフェーズにタスクを追加すると、ここに期限順で出ます。
         </div>
       )}

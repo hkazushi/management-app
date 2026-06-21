@@ -22,7 +22,7 @@ export function AppNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface/90 backdrop-blur-lg">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-bg/70 backdrop-blur-xl">
       <ul className="mx-auto flex max-w-xl items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const active = isActive(pathname, item.href);
@@ -36,7 +36,7 @@ export function AppNav() {
               >
                 <span
                   className={`flex h-9 w-12 items-center justify-center rounded-full transition ${
-                    active ? "bg-primary/12" : ""
+                    active ? "bg-primary/15 shadow-glow" : ""
                   }`}
                 >
                   <Icon name={item.icon} size={21} filled={active} />
