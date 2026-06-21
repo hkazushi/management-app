@@ -66,6 +66,22 @@ export async function deleteProject(id: string) {
   redirect("/projects");
 }
 
+// 一覧からその場で素早く案件を追加（名前だけ・active）
+export async function createQuickProject(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return;
+  const supabase = await createClient();
+  await supabase.from("projects").insert({ name, status: "active" });
+  revalidatePath("/projects");
+}
+
+// draft → active 確定（一覧からワンタップ）
+export async function activateProject(id: string) {
+  const supabase = await createClient();
+  await supabase.from("projects").update({ status: "active" }).eq("id", id);
+  revalidatePath("/projects");
+}
+
 export async function createCategory(formData: FormData) {
   const supabase = await createClient();
   const name = String(formData.get("name") ?? "").trim();
