@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { PRIORITY_META } from "@/lib/constants";
+import { Icon } from "@/components/Icon";
 import type { TaskPriority } from "@/types/database";
 
 type TaskRow = {
@@ -32,7 +33,7 @@ function TaskRowView({
   return (
     <Link
       href={`/projects/${t.project_id}`}
-      className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2"
+      className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card transition hover:border-primary/30"
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-ink">{t.title}</p>
@@ -99,27 +100,28 @@ export default async function TodayPage() {
   return (
     <section className="space-y-5">
       <div>
-        <h1 className="text-2xl font-bold text-ink">Today</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-ink">Today</h1>
         <p className="mt-0.5 text-sm text-muted">{today}</p>
       </div>
 
       {/* 横断検索 */}
-      <form action="/search" className="flex gap-2">
+      <form action="/search" className="relative">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-faint">
+          <Icon name="search" size={17} />
+        </span>
         <input
           name="q"
           placeholder="案件・タスクを検索"
-          className="flex-1 rounded-xl border border-border bg-surface px-3 py-2 text-sm text-ink outline-none focus:border-primary"
+          className="input pl-9"
         />
-        <button className="rounded-xl border border-border px-3 py-2 text-sm text-muted">
-          検索
-        </button>
       </form>
 
       {/* 放置案件アラート */}
       {stale.length > 0 && (
-        <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning/5 p-4">
-          <p className="text-sm font-semibold text-warning">
-            ⚠️ {STALE_DAYS}日以上動きのない案件（{stale.length}）
+        <div className="space-y-2 rounded-2xl border border-warning/40 bg-warning/8 p-4 shadow-card">
+          <p className="flex items-center gap-1.5 text-sm font-semibold text-warning">
+            <Icon name="alert" size={16} />
+            {STALE_DAYS}日以上動きのない案件（{stale.length}）
           </p>
           <div className="flex flex-wrap gap-2">
             {stale.map((p) => (

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { updateProject } from "../../actions";
 import { ProjectForm } from "@/components/ProjectForm";
+import { Icon } from "@/components/Icon";
 import type { Database } from "@/types/database";
 
 type Project = Database["public"]["Tables"]["projects"]["Row"];
@@ -32,11 +33,12 @@ export default async function EditProjectPage({
     <section className="space-y-4">
       <Link
         href={`/projects/${id}`}
-        className="text-sm text-muted hover:text-ink"
+        className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
       >
-        ← 案件詳細へ
+        <Icon name="back" size={15} />
+        案件詳細へ
       </Link>
-      <h1 className="text-2xl font-bold text-ink">案件を編集</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">案件を編集</h1>
 
       <ProjectForm
         action={updateProject.bind(null, id)}

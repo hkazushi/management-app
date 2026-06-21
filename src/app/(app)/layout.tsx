@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { AppNav } from "@/components/AppNav";
+import { Icon } from "@/components/Icon";
 import { logout } from "./actions";
 
 // 認証済みエリアの共通シェル。未ログインは /login へ（middleware と二重で守る）。
@@ -19,22 +21,30 @@ export default async function AppLayout({
   }
 
   return (
-    <div className="min-h-dvh pb-16">
-      <header className="sticky top-0 z-10 border-b border-border bg-bg/90 backdrop-blur">
+    <div className="min-h-dvh pb-24">
+      <header className="sticky top-0 z-20 border-b border-border bg-bg/80 backdrop-blur-lg">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
-          <span className="text-base font-bold text-ink">案件・タスク管理</span>
+          <Link href="/" className="flex items-center gap-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white shadow-glow">
+              <Icon name="flag" size={16} filled />
+            </span>
+            <span className="text-[15px] font-bold tracking-tight text-ink">
+              案件・タスク管理
+            </span>
+          </Link>
           <form action={logout}>
             <button
               type="submit"
-              className="rounded-lg px-2 py-1 text-xs font-medium text-muted hover:text-danger"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-ink/5 hover:text-danger"
             >
+              <Icon name="lock" size={15} />
               ロック
             </button>
           </form>
         </div>
       </header>
 
-      <div className="mx-auto max-w-xl px-4 py-4">{children}</div>
+      <main className="mx-auto max-w-xl px-4 py-5">{children}</main>
 
       <AppNav />
     </div>

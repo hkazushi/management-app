@@ -5,6 +5,7 @@ import {
   generateSummary,
   type SummaryState,
 } from "@/app/(app)/projects/[id]/actions";
+import { Icon } from "./Icon";
 
 const initial: SummaryState = { error: "" };
 
@@ -26,13 +27,10 @@ export function SummaryButton({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-lg border border-primary/40 px-3 py-1.5 text-sm font-medium text-primary hover:bg-primary/10 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-primary/40 bg-surface px-3.5 py-2 text-sm font-medium text-primary transition hover:bg-primary/10 disabled:opacity-60"
         >
-          {pending
-            ? "生成中…"
-            : hasSummary
-              ? "🔄 サマリーを更新"
-              : "✨ AIサマリーを生成"}
+          <Icon name="sparkles" size={15} filled={!pending} />
+          {pending ? "生成中…" : hasSummary ? "サマリーを更新" : "AIサマリーを生成"}
         </button>
       </form>
       {state.error && <p className="mt-1.5 text-xs text-danger">{state.error}</p>}

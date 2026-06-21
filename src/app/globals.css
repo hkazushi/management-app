@@ -3,22 +3,25 @@
 @tailwind utilities;
 
 /*
-  warm / vibrant パレット（spec §4 デザイン方針）
-  色は rgb の各チャンネルを空白区切りで定義し、Tailwind の <alpha-value> と組み合わせる。
+  warm / vibrant パレット（spec §4）。可読性とコントラストを重視して再設計。
+  rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 255 248 240;       /* 生成り・暖かい背景 */
-  --surface: 255 255 255;  /* カード面 */
-  --border: 240 226 210;   /* やわらかい境界 */
-  --ink: 41 34 30;         /* 文字（こげ茶寄りの黒） */
-  --muted: 130 116 104;    /* 補助テキスト */
+  --bg: 252 248 243; /* 温かみのある生成り背景 */
+  --surface: 255 255 255; /* カード面 */
+  --elevated: 255 251 246; /* わずかに浮いた面 */
+  --border: 236 227 216; /* やわらかい境界 */
+  --ink: 35 28 24; /* 主要テキスト（こげ茶寄りの黒） */
+  --muted: 120 106 96; /* 補助テキスト */
+  --faint: 165 152 141; /* さらに薄いテキスト */
 
-  --primary: 255 140 66;   /* #FF8C42 メインの暖色オレンジ */
-  --accent: 233 78 119;    /* 鮮やかなピンク系アクセント */
+  --primary: 245 124 52; /* 鮮やかなオレンジ */
+  --primary-deep: 224 96 28; /* 濃いオレンジ（ホバー/強調） */
+  --accent: 233 78 119; /* ピンク系アクセント */
 
-  --success: 38 166 120;   /* done・順調 */
-  --warning: 240 169 41;   /* 要注意・期限接近 */
-  --danger: 226 74 74;     /* 期限超過・アラート */
+  --success: 22 163 113;
+  --warning: 217 145 22;
+  --danger: 224 74 74;
 }
 
 html,
@@ -28,9 +31,36 @@ body {
 }
 
 body {
-  background-color: rgb(var(--bg));
+  background:
+    radial-gradient(1200px 600px at 100% -10%, rgb(var(--primary) / 0.06), transparent 60%),
+    radial-gradient(1000px 500px at -10% 0%, rgb(var(--accent) / 0.05), transparent 55%),
+    rgb(var(--bg));
+  background-attachment: fixed;
   color: rgb(var(--ink));
-  font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
-    "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@layer components {
+  .card {
+    @apply rounded-2xl border border-border bg-surface shadow-card;
+  }
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition active:scale-[0.98] hover:bg-primary-deep disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-surface px-3.5 py-2 text-sm font-medium text-ink transition hover:border-primary/40 hover:bg-primary/5;
+  }
+  .btn-icon {
+    @apply inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-ink/5 hover:text-ink;
+  }
+  .input {
+    @apply w-full rounded-xl border border-border bg-surface px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint focus:border-primary focus:ring-4 focus:ring-primary/10;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  .section-label {
+    @apply text-xs font-semibold uppercase tracking-wider text-faint;
+  }
 }

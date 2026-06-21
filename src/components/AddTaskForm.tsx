@@ -11,7 +11,7 @@ function AddButton() {
     <button
       type="submit"
       disabled={pending}
-      className="rounded-lg bg-primary/90 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+      className="shrink-0 rounded-xl bg-primary px-3.5 py-2 text-sm font-semibold text-white transition hover:bg-primary-deep disabled:opacity-60"
     >
       追加
     </button>
@@ -40,12 +40,12 @@ export function AddTaskForm({
         name="title"
         required
         placeholder="＋ タスクを追加"
-        className="flex-1 rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-primary"
+        className="input flex-1"
       />
       <select
         name="priority"
         defaultValue="mid"
-        className="rounded-lg border border-border bg-bg px-1.5 py-1.5 text-xs text-ink"
+        className="shrink-0 rounded-xl border border-border bg-surface px-2 py-2 text-xs text-ink outline-none focus:border-primary"
         aria-label="優先度"
       >
         {PRIORITY_OPTIONS.map((p) => (

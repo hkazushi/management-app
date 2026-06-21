@@ -1,7 +1,7 @@
 "use client";
 
 import { deleteResource } from "@/app/(app)/projects/[id]/actions";
-import { RESOURCE_TYPE_META } from "@/lib/constants";
+import { Icon } from "./Icon";
 import type { ResourceType } from "@/types/database";
 
 type Resource = {
@@ -13,6 +13,12 @@ type Resource = {
   note: string | null;
 };
 
+const typeIcon: Record<ResourceType, "link" | "user" | "tool"> = {
+  link: "link",
+  account: "user",
+  tool: "tool",
+};
+
 export function ResourceItem({
   projectId,
   resource,
@@ -20,27 +26,26 @@ export function ResourceItem({
   projectId: string;
   resource: Resource;
 }) {
-  const meta = RESOURCE_TYPE_META[resource.type] ?? RESOURCE_TYPE_META.link;
   return (
-    <div className="flex items-start gap-2 rounded-xl border border-border bg-surface px-3 py-2">
-      <span className="text-base leading-6">{meta.icon}</span>
+    <div className="flex items-start gap-3 rounded-xl border border-border bg-surface px-3 py-2.5 shadow-card">
+      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        <Icon name={typeIcon[resource.type] ?? "link"} size={15} />
+      </span>
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          {resource.url ? (
-            <a
-              href={resource.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="truncate font-medium text-primary hover:underline"
-            >
-              {resource.label}
-            </a>
-          ) : (
-            <span className="truncate font-medium text-ink">{resource.label}</span>
-          )}
-        </div>
+        {resource.url ? (
+          <a
+            href={resource.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="truncate font-medium text-primary hover:underline"
+          >
+            {resource.label}
+          </a>
+        ) : (
+          <span className="truncate font-medium text-ink">{resource.label}</span>
+        )}
         {resource.account && (
-          <p className="truncate text-xs text-muted">👤 {resource.account}</p>
+          <p className="truncate text-xs text-muted">{resource.account}</p>
         )}
         {resource.note && (
           <p className="text-xs text-muted">{resource.note}</p>
@@ -52,8 +57,8 @@ export function ResourceItem({
           if (!confirm("このリソースを削除しますか？")) e.preventDefault();
         }}
       >
-        <button type="submit" aria-label="削除" className="text-muted hover:text-danger">
-          ✕
+        <button type="submit" aria-label="削除" className="text-faint hover:text-danger">
+          <Icon name="trash" size={15} />
         </button>
       </form>
     </div>

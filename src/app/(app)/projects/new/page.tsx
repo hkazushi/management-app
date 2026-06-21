@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ensureDefaultCategories, createProject } from "../actions";
 import { ProjectForm } from "@/components/ProjectForm";
+import { Icon } from "@/components/Icon";
 
 export default async function NewProjectPage() {
   await ensureDefaultCategories();
@@ -16,10 +17,14 @@ export default async function NewProjectPage() {
 
   return (
     <section className="space-y-4">
-      <Link href="/projects" className="text-sm text-muted hover:text-ink">
-        ← 案件一覧へ
+      <Link
+        href="/projects"
+        className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+      >
+        <Icon name="back" size={15} />
+        案件一覧へ
       </Link>
-      <h1 className="text-2xl font-bold text-ink">新規案件</h1>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">新規案件</h1>
 
       <ProjectForm
         action={createProject}

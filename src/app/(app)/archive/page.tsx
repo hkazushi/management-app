@@ -40,7 +40,7 @@ export default async function ArchivePage() {
             <li key={p.id}>
               <Link
                 href={`/projects/${p.id}`}
-                className="block rounded-2xl border border-border bg-surface p-4 opacity-80 transition hover:opacity-100"
+                className="card block p-4 opacity-80 transition hover:opacity-100 hover:shadow-pop"
               >
                 <div className="flex items-start justify-between gap-2">
                   <span className="font-semibold text-ink">{p.name}</span>

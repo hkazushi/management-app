@@ -8,18 +8,13 @@ import { RESOURCE_TYPE_OPTIONS, RESOURCE_TYPE_META } from "@/lib/constants";
 function SubmitBtn() {
   const { pending } = useFormStatus();
   return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-white disabled:opacity-60"
-    >
+    <button type="submit" disabled={pending} className="btn-primary">
       追加
     </button>
   );
 }
 
-const inputCls =
-  "w-full rounded-lg border border-border bg-bg px-3 py-1.5 text-sm text-ink outline-none focus:border-primary";
+const inputCls = "input";
 
 export function AddResourceForm({ projectId }: { projectId: string }) {
   const ref = useRef<HTMLFormElement>(null);
@@ -29,7 +24,7 @@ export function AddResourceForm({ projectId }: { projectId: string }) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="rounded-lg border border-dashed border-border px-3 py-1.5 text-sm text-muted hover:text-ink"
+        className="w-full rounded-xl border border-dashed border-border py-2.5 text-sm font-medium text-muted transition hover:border-primary/40 hover:text-primary"
       >
         ＋ リソースを追加
       </button>

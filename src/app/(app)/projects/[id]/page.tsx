@@ -13,6 +13,7 @@ import { TaskItem } from "@/components/TaskItem";
 import { AddResourceForm } from "@/components/AddResourceForm";
 import { ResourceItem } from "@/components/ResourceItem";
 import { SummaryButton } from "@/components/SummaryButton";
+import { Icon } from "@/components/Icon";
 import type {
   Database,
   PhaseStatus,
@@ -120,8 +121,12 @@ export default async function ProjectDetailPage({
 
   return (
     <section className="space-y-5">
-      <Link href="/projects" className="text-sm text-muted hover:text-ink">
-        ← 案件一覧へ
+      <Link
+        href="/projects"
+        className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
+      >
+        <Icon name="back" size={15} />
+        案件一覧へ
       </Link>
 
       <header className="space-y-2">
@@ -143,16 +148,14 @@ export default async function ProjectDetailPage({
       </header>
 
       {project.note && (
-        <div className="whitespace-pre-wrap rounded-2xl border border-border bg-surface p-4 text-sm leading-relaxed text-ink">
+        <div className="card whitespace-pre-wrap p-4 text-sm leading-relaxed text-ink">
           {project.note}
         </div>
       )}
 
       <div className="flex items-center gap-2">
-        <Link
-          href={`/projects/${id}/edit`}
-          className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-ink hover:border-primary/50"
-        >
+        <Link href={`/projects/${id}/edit`} className="btn-ghost">
+          <Icon name="edit" size={15} />
           編集
         </Link>
         <DeleteProjectButton
@@ -162,9 +165,12 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* AIサマリー（spec §3.4） */}
-      <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-4">
+      <div className="space-y-2 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/8 to-accent/5 p-4 shadow-card">
         <div className="flex items-center justify-between gap-2">
-          <h2 className="text-sm font-semibold text-ink">AIサマリー</h2>
+          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+            <Icon name="sparkles" size={15} className="text-primary" filled />
+            AIサマリー
+          </h2>
           {project.summary_updated_at && (
             <span className="text-[11px] text-muted">
               更新 {String(project.summary_updated_at).slice(0, 10)}
@@ -192,10 +198,8 @@ export default async function ProjectDetailPage({
           const phaseTasks = tasks.filter((t) => t.phase_id === phase.id);
           const prog = progMap.get(phase.id);
           return (
-            <div
-              key={phase.id}
-              className="rounded-2xl border border-border bg-surface/60 p-4"
-            >
+            <div key={phase.id} className="card p-4">
+
               <div className="mb-3 flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <h2 className="font-semibold text-ink">{phase.name}</h2>
@@ -227,7 +231,7 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* 情報・リソース（spec §3.5） */}
-      <div className="space-y-2.5 rounded-2xl border border-border bg-surface/60 p-4">
+      <div className="card space-y-2.5 p-4">
         <div className="flex items-center justify-between">
           <h2 className="font-semibold text-ink">情報・リソース</h2>
           <span className="text-xs text-muted">リンク / アカウント / ツール</span>

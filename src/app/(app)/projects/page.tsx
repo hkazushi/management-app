@@ -4,6 +4,7 @@ import { ensureDefaultCategories } from "./actions";
 import { ACTIVE_STATUSES } from "@/lib/constants";
 import { StatusBadge } from "@/components/StatusBadge";
 import { CategoryChip } from "@/components/CategoryChip";
+import { Icon } from "@/components/Icon";
 import type { ProjectStatus } from "@/types/database";
 
 type CatLite = { id: string; name: string; color: string };
@@ -67,12 +68,10 @@ export default async function ProjectsPage({
   return (
     <section className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-ink">案件</h1>
-        <Link
-          href="/projects/new"
-          className="rounded-xl bg-primary px-3 py-1.5 text-sm font-semibold text-white"
-        >
-          ＋新規
+        <h1 className="text-2xl font-bold tracking-tight text-ink">案件</h1>
+        <Link href="/projects/new" className="btn-primary">
+          <Icon name="plus" size={16} />
+          新規
         </Link>
       </div>
 
@@ -146,8 +145,8 @@ export default async function ProjectsPage({
               <li key={p.id}>
                 <Link
                   href={`/projects/${p.id}`}
-                  className={`block rounded-2xl border border-border bg-surface p-4 transition hover:border-primary/50 ${
-                    isDraft ? "opacity-55" : ""
+                  className={`card block p-4 transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-pop ${
+                    isDraft ? "opacity-60" : ""
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
