@@ -1,0 +1,36 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+  warm / vibrant パレット（spec §4 デザイン方針）
+  色は rgb の各チャンネルを空白区切りで定義し、Tailwind の <alpha-value> と組み合わせる。
+*/
+:root {
+  --bg: 255 248 240;       /* 生成り・暖かい背景 */
+  --surface: 255 255 255;  /* カード面 */
+  --border: 240 226 210;   /* やわらかい境界 */
+  --ink: 41 34 30;         /* 文字（こげ茶寄りの黒） */
+  --muted: 130 116 104;    /* 補助テキスト */
+
+  --primary: 255 140 66;   /* #FF8C42 メインの暖色オレンジ */
+  --accent: 233 78 119;    /* 鮮やかなピンク系アクセント */
+
+  --success: 38 166 120;   /* done・順調 */
+  --warning: 240 169 41;   /* 要注意・期限接近 */
+  --danger: 226 74 74;     /* 期限超過・アラート */
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+}
+
+body {
+  background-color: rgb(var(--bg));
+  color: rgb(var(--ink));
+  font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+    "Hiragino Sans", "Noto Sans JP", Meiryo, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
