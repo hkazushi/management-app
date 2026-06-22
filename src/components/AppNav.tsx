@@ -22,7 +22,7 @@ export function AppNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-bg">
+    <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-bg">
       <ul className="mx-auto flex max-w-xl items-stretch justify-around px-2 pb-[env(safe-area-inset-bottom)]">
         {items.map((item) => {
           const active = isActive(pathname, item.href);

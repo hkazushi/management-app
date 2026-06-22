@@ -21,7 +21,13 @@ type Proj = {
 };
 export type Overview = Record<
   string,
-  { total: number; done: number; nextDue: string | null }
+  {
+    total: number;
+    done: number;
+    nextDue: string | null;
+    phase: string | null;
+    lastActivity: string | null;
+  }
 >;
 
 const STATUS_TABS: { label: string; value: "" | ProjectStatus }[] = [
@@ -105,17 +111,17 @@ export function ProjectList({
             className={`rounded-full px-3 py-1 text-xs font-medium transition ${
               status === t.value
                 ? "bg-primary text-white"
-                : "border border-white/12 text-muted hover:text-ink"
+                : "border border-border text-muted hover:text-ink"
             }`}
           >
             {t.label}
           </button>
         ))}
-        <span className="mx-1 w-px self-stretch bg-white/10" />
+        <span className="mx-1 w-px self-stretch bg-black/[0.06]" />
         <button
           onClick={() => setCat("")}
           className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-            !cat ? "bg-ink/15 text-ink" : "border border-white/12 text-muted"
+            !cat ? "bg-ink/15 text-ink" : "border border-border text-muted"
           }`}
         >
           全カテゴリ
@@ -144,15 +150,15 @@ export function ProjectList({
           該当する案件がありません。
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-2xl border border-white/10">
+        <ul className="overflow-hidden rounded-2xl border border-border">
           {filtered.map((p, i) => {
             const c = p.category_id ? catMap.get(p.category_id) : null;
             const isDraft = p.status === "draft";
             return (
               <li
                 key={p.id}
-                className={`flex items-center gap-3 bg-white/[0.03] px-3.5 py-3 transition hover:bg-white/[0.06] ${
-                  i > 0 ? "border-t border-white/8" : ""
+                className={`flex items-center gap-3 bg-surface px-3.5 py-3 transition hover:bg-primary/5 ${
+                  i > 0 ? "border-t border-border" : ""
                 }`}
               >
                 <span
@@ -175,22 +181,36 @@ export function ProjectList({
                   )}
                   {(() => {
                     const o = overview[p.id];
-                    if (!o || o.total === 0) return null;
-                    const pct = Math.round((100 * o.done) / o.total);
+                    if (!o) return null;
+                    const pct = o.total
+                      ? Math.round((100 * o.done) / o.total)
+                      : 0;
                     return (
-                      <div className="mt-1.5 flex items-center gap-2">
-                        <span className="h-1 w-16 overflow-hidden rounded-full bg-white/10">
-                          <span
-                            className="block h-full rounded-full bg-primary"
-                            style={{ width: `${pct}%` }}
-                          />
-                        </span>
-                        <span className="text-[11px] tabular-nums text-faint">
-                          {o.done}/{o.total}
-                        </span>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[11px]">
+                        {o.phase && (
+                          <span className="rounded bg-black/[0.05] px-1.5 py-0.5 font-medium text-muted">
+                            {o.phase}
+                          </span>
+                        )}
+                        {o.total > 0 && (
+                          <span className="flex items-center gap-1">
+                            <span className="h-1 w-14 overflow-hidden rounded-full bg-black/[0.06]">
+                              <span
+                                className="block h-full rounded-full bg-primary"
+                                style={{ width: `${pct}%` }}
+                              />
+                            </span>
+                            <span className="tabular-nums text-faint">
+                              {o.done}/{o.total}
+                            </span>
+                          </span>
+                        )}
                         {o.nextDue && (
-                          <span className="text-[11px] text-warning">
-                            〆{o.nextDue}
+                          <span className="text-warning">〆{o.nextDue}</span>
+                        )}
+                        {o.lastActivity && (
+                          <span className="text-faint">
+                            更新 {o.lastActivity.slice(0, 10)}
                           </span>
                         )}
                       </div>

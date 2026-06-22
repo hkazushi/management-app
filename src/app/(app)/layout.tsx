@@ -12,7 +12,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="min-h-dvh pb-24">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-bg">
+      <header className="sticky top-0 z-20 border-b border-border bg-bg">
         <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
@@ -25,7 +25,7 @@ export default function AppLayout({
           <form action={logout}>
             <button
               type="submit"
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-white/5 hover:text-danger"
+              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-black/5 hover:text-danger"
             >
               <Icon name="lock" size={15} />
               ロック

@@ -21,7 +21,7 @@ type Task = {
 };
 
 const menuItem =
-  "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-ink hover:bg-white/10";
+  "flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-left text-xs text-ink hover:bg-primary/5";
 
 export function TaskItem({
   projectId,
@@ -35,7 +35,7 @@ export function TaskItem({
   const phaseId = task.phase_id ?? "";
 
   return (
-    <div className="group flex items-center gap-2.5 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition hover:border-primary/30 hover:bg-white/[0.07]">
+    <div className="group flex items-center gap-2.5 rounded-xl border border-border bg-surface px-3 py-2.5 transition hover:border-primary/30 hover:bg-primary/5">
       {/* 完了トグル（手動のみ） */}
       <form action={toggleTaskDone.bind(null, projectId, task.id, !done)}>
         <button
@@ -44,7 +44,7 @@ export function TaskItem({
           className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 transition ${
             done
               ? "border-success bg-success text-white"
-              : "border-white/25 text-transparent hover:border-primary"
+              : "border-muted/40 text-transparent hover:border-primary"
           }`}
         >
           <Icon name="check" size={13} />
@@ -92,10 +92,10 @@ export function TaskItem({
 
       {/* その他操作（メニュー集約） */}
       <details className="relative">
-        <summary className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted [&::-webkit-details-marker]:hidden hover:bg-white/10 hover:text-ink">
+        <summary className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg text-muted [&::-webkit-details-marker]:hidden hover:bg-primary/5 hover:text-ink">
           ⋯
         </summary>
-        <div className="absolute right-0 z-20 mt-1 w-36 rounded-xl border border-white/10 bg-elevated p-1 shadow-pop">
+        <div className="absolute right-0 z-20 mt-1 w-36 rounded-xl border border-border bg-elevated p-1 shadow-pop">
           <form action={setTaskStatus.bind(null, projectId, task.id)}>
             <input type="hidden" name="status" value={doing ? "todo" : "doing"} />
             <button type="submit" className={menuItem}>

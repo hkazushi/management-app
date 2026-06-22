@@ -67,7 +67,7 @@ function TaskRowView({
   return (
     <Link
       href={`/projects/${t.project_id}`}
-      className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition hover:border-primary/30 hover:bg-white/[0.07]"
+      className="flex items-center gap-2 rounded-xl border border-border bg-surface px-3 py-2.5 transition hover:border-primary/30 hover:bg-primary/5"
     >
       <div className="min-w-0 flex-1">
         <p className="truncate text-sm text-ink">{t.title}</p>

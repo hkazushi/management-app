@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 /*
-  シンプルなダークテーマ。発光・グラデ・ブラーを抑え、フラットで落ち着いた配色。
+  ライト×ミニマル。白基調・余白広め・薄い境界＋ごく弱い影。装飾は最小限。
   rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 17 19 27; /* 落ち着いた濃いグレー */
-  --surface: 28 31 42;
-  --elevated: 36 40 54;
-  --border: 58 63 80;
-  --ink: 233 236 243;
-  --muted: 150 158 176;
-  --faint: 110 118 138;
+  --bg: 247 248 250; /* やわらかいオフホワイト背景 */
+  --surface: 255 255 255; /* カード面（白） */
+  --elevated: 255 255 255;
+  --border: 226 230 237; /* 薄いグレーの境界 */
+  --ink: 24 28 39; /* 主要テキスト */
+  --muted: 96 104 122; /* 補助テキスト */
+  --faint: 150 159 175;
 
-  --primary: 240 130 60; /* オレンジ（控えめ） */
-  --primary-deep: 222 104 38;
-  --accent: 92 165 255; /* 青（アクセント・控えめ） */
+  --primary: 234 100 38; /* オレンジ（白地で読めるトーン） */
+  --primary-deep: 200 78 22;
+  --accent: 37 99 235; /* 青（最小限） */
 
-  --success: 60 190 130;
-  --warning: 222 160 60;
-  --danger: 232 96 96;
+  --success: 22 150 100;
+  --warning: 190 128 20;
+  --danger: 220 64 64;
 }
 
 html,
@@ -38,31 +38,31 @@ body {
 }
 
 @layer components {
-  /* フラットなカード（ブラーなし・薄い境界） */
   .card {
-    @apply rounded-xl;
-    background: rgb(255 255 255 / 0.028);
-    border: 1px solid rgb(255 255 255 / 0.08);
+    @apply rounded-xl shadow-card;
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
   }
   .btn-primary {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-deep active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-ghost {
     @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-ink transition;
-    background: rgb(255 255 255 / 0.04);
-    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
   }
   .btn-ghost:hover {
-    background: rgb(255 255 255 / 0.08);
+    background: rgb(var(--bg));
+    border-color: rgb(var(--primary) / 0.4);
   }
   .input {
     @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint;
-    background: rgb(255 255 255 / 0.05);
-    border: 1px solid rgb(255 255 255 / 0.1);
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
   }
   .input:focus {
-    border-color: rgb(var(--primary) / 0.6);
-    background: rgb(255 255 255 / 0.07);
+    border-color: rgb(var(--primary) / 0.7);
+    box-shadow: 0 0 0 3px rgb(var(--primary) / 0.12);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
@@ -71,13 +71,8 @@ body {
     @apply text-xs font-semibold uppercase tracking-wider text-faint;
   }
   .stat-card {
-    @apply rounded-xl p-4;
-    background: rgb(255 255 255 / 0.028);
-    border: 1px solid rgb(255 255 255 / 0.08);
+    @apply rounded-xl p-4 shadow-card;
+    background: rgb(var(--surface));
+    border: 1px solid rgb(var(--border));
   }
-}
-
-/* ダーク背景でも select の選択肢を読めるように */
-select option {
-  color: #1a1a1a;
 }

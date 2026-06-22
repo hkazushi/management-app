@@ -20,7 +20,7 @@ export function PhaseStatusSelect({
         name="status"
         defaultValue={status}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className={`cursor-pointer rounded-lg border border-white/12 bg-white/[0.06] px-2 py-1 text-xs font-semibold ${PHASE_STATUS_META[status].text}`}
+        className={`cursor-pointer rounded-lg border border-border bg-surface px-2 py-1 text-xs font-semibold ${PHASE_STATUS_META[status].text}`}
         aria-label="フェーズ状態"
       >
         {PHASE_STATUS_OPTIONS.map((s) => (

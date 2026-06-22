@@ -47,7 +47,7 @@ export function PhaseSection({
                 ? "bg-success text-white"
                 : isProg
                   ? "bg-primary text-white"
-                  : "border-2 border-white/15 text-faint"
+                  : "border-2 border-border text-faint"
             }`}
           >
             {isDone ? <Icon name="check" size={13} /> : total ? `${pct}` : "·"}
@@ -72,7 +72,7 @@ export function PhaseSection({
       </div>
 
       {open && (
-        <div className="space-y-1.5 border-t border-white/10 p-3">
+        <div className="space-y-1.5 border-t border-border p-3">
           {tasks.map((t) => (
             <TaskItem key={t.id} projectId={projectId} task={t} />
           ))}

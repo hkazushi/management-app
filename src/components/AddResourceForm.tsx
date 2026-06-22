@@ -39,7 +39,7 @@ export function AddResourceForm({ projectId }: { projectId: string }) {
         ref.current?.reset();
         setOpen(false);
       }}
-      className="space-y-2 rounded-xl border border-white/10 bg-white/[0.04] p-3"
+      className="space-y-2 rounded-xl border border-border bg-surface p-3"
     >
       <div className="flex gap-2">
         <select name="type" defaultValue="link" className={inputCls} aria-label="種別">

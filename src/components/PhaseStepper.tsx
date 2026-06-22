@@ -24,7 +24,7 @@ export function PhaseStepper({
         <span className="text-sm font-semibold text-ink">全体の進捗</span>
         <span className="text-lg font-bold text-primary">{overallPct}%</span>
       </div>
-      <div className="h-2.5 w-full overflow-hidden rounded-full bg-bg">
+      <div className="h-2.5 w-full overflow-hidden rounded-full bg-black/[0.06]">
         <div
           className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${overallPct}%` }}
