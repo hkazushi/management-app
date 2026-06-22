@@ -82,7 +82,7 @@ export function ProjectForm({
           <label className="text-sm font-medium text-muted">ステータス</label>
           <select
             name="status"
-            defaultValue={d.status ?? "active"}
+            defaultValue={d.status ?? "ヒアリング"}
             className={inputCls}
           >
             {PROJECT_STATUS_OPTIONS.map((s) => (

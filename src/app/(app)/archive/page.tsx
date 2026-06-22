@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { StatusBadge } from "@/components/StatusBadge";
+import { ARCHIVE_STATUSES } from "@/lib/constants";
 import type { ProjectStatus } from "@/types/database";
 
 type ProjLite = {
@@ -16,7 +17,7 @@ export default async function ArchivePage() {
   const { data: raw } = await supabase
     .from("projects")
     .select("id,name,client,status")
-    .in("status", ["done", "archived"])
+    .in("status", ARCHIVE_STATUSES)
     .order("created_at", { ascending: false });
   const projects = (raw as ProjLite[] | null) ?? [];
 

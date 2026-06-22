@@ -6,7 +6,11 @@ import {
   createQuickProject,
   setProjectStatus,
 } from "@/app/(app)/projects/actions";
-import { PROJECT_STATUS_META, PROJECT_STATUS_OPTIONS } from "@/lib/constants";
+import {
+  PROJECT_STATUS_META,
+  PROJECT_STATUS_OPTIONS,
+  ACTIVE_STATUSES,
+} from "@/lib/constants";
 import { Icon } from "./Icon";
 import type { ProjectStatus } from "@/types/database";
 
@@ -31,10 +35,8 @@ export type Overview = Record<
 >;
 
 const STATUS_TABS: { label: string; value: "" | ProjectStatus }[] = [
-  { label: "作業中", value: "" },
-  { label: "進行中", value: "active" },
-  { label: "保留", value: "on_hold" },
-  { label: "下書き", value: "draft" },
+  { label: "すべて", value: "" },
+  ...ACTIVE_STATUSES.map((s) => ({ label: s, value: s })),
 ];
 
 export function ProjectList({
@@ -153,7 +155,6 @@ export function ProjectList({
         <ul className="overflow-hidden rounded-2xl border border-border">
           {filtered.map((p, i) => {
             const c = p.category_id ? catMap.get(p.category_id) : null;
-            const isDraft = p.status === "draft";
             return (
               <li
                 key={p.id}
@@ -163,15 +164,11 @@ export function ProjectList({
               >
                 <span
                   className="h-2.5 w-2.5 shrink-0 rounded-full"
-                  style={
-                    isDraft
-                      ? { boxShadow: `inset 0 0 0 1.5px ${c?.color ?? "#6c7896"}` }
-                      : { backgroundColor: c?.color ?? "rgb(245 124 52)" }
-                  }
+                  style={{ backgroundColor: c?.color ?? "rgb(234 100 38)" }}
                 />
                 <Link
                   href={`/projects/${p.id}`}
-                  className={`min-w-0 flex-1 ${isDraft ? "opacity-70" : ""}`}
+                  className="min-w-0 flex-1"
                 >
                   <p className="truncate text-sm font-medium text-ink">
                     {p.name}

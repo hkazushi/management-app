@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PRIORITY_META } from "@/lib/constants";
+import { PRIORITY_META, ACTIVE_STATUSES } from "@/lib/constants";
 import { Icon } from "@/components/Icon";
 import type { TaskPriority } from "@/types/database";
+
+const WORKING = ACTIVE_STATUSES as string[];
 
 type TaskRow = {
   id: string;
@@ -107,7 +109,7 @@ export default async function TodayPage() {
   const tasks = (tRes.data as TaskRow[] | null) ?? [];
   const projects = (pRes.data as ProjRow[] | null) ?? [];
   const pName = new Map(projects.map((p) => [p.id, p.name]));
-  const activeCount = projects.filter((p) => p.status === "active").length;
+  const activeCount = projects.filter((p) => WORKING.includes(p.status)).length;
   const acts =
     (aRes.data as { project_id: string | null; created_at: string }[] | null) ??
     [];
@@ -119,7 +121,7 @@ export default async function TodayPage() {
 
   const now = Date.now();
   const stale = projects
-    .filter((p) => p.status === "active")
+    .filter((p) => WORKING.includes(p.status))
     .map((p) => {
       const last = lastAct.get(p.id) ?? p.created_at;
       const days = Math.floor((now - new Date(last).getTime()) / 86400000);

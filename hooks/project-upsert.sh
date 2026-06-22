@@ -33,7 +33,7 @@ fi
   if [ "$existing" = "[]" ]; then
     name=$(basename "$cwd")
     body=$(jq -nc --arg n "$name" --arg p "$cwd" --arg u "$MANAGEMENT_USER_ID" \
-      '{name:$n, repo_path:$p, status:"draft", user_id:$u}')
+      '{name:$n, repo_path:$p, status:"ヒアリング", user_id:$u}')
     curl -s --max-time 10 -X POST "$SUPABASE_URL/rest/v1/projects" \
       -H "apikey: $SUPABASE_SERVICE_KEY" \
       -H "Authorization: Bearer $SUPABASE_SERVICE_KEY" \

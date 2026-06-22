@@ -3,11 +3,14 @@
 // 各テーブル/ビューに Relationships を持たせる（supabase-js の結果型推論に必要）。
 
 export type ProjectStatus =
-  | "draft"
-  | "active"
-  | "on_hold"
-  | "done"
-  | "archived";
+  | "ヒアリング"
+  | "デモ作成"
+  | "確認待ち"
+  | "導入対応"
+  | "テスト運用"
+  | "運用中"
+  | "完了"
+  | "アーカイブ";
 export type PhaseStatus = "not_started" | "in_progress" | "done";
 export type TaskStatus = "todo" | "doing" | "done";
 export type TaskPriority = "low" | "mid" | "high";

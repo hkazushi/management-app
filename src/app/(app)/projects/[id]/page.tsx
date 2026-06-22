@@ -8,6 +8,7 @@ import { CategoryChip } from "@/components/CategoryChip";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { PhaseStepper } from "@/components/PhaseStepper";
 import { PhaseSection } from "@/components/PhaseSection";
+import { StatusFlow } from "@/components/StatusFlow";
 import { AddResourceForm } from "@/components/AddResourceForm";
 import { ResourceItem } from "@/components/ResourceItem";
 import { SummaryButton } from "@/components/SummaryButton";
@@ -157,6 +158,9 @@ export default async function ProjectDetailPage({
           name={project.name}
         />
       </div>
+
+      {/* 進行ステージのフロー図（現在地を強調・タップで変更） */}
+      <StatusFlow projectId={id} current={project.status} />
 
       {/* AIサマリー（spec §3.4） */}
       <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.07] p-4">

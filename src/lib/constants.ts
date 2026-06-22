@@ -6,28 +6,53 @@ import type {
   ResourceType,
 } from "@/types/database";
 
-// 案件ステータスの表示メタ（spec §3.1）
+// 案件ステータス（案件の進行ステージ）の表示メタ
 export const PROJECT_STATUS_META: Record<
   ProjectStatus,
   { label: string; badge: string }
 > = {
-  draft: { label: "下書き", badge: "bg-muted/10 text-muted" },
-  active: { label: "進行中", badge: "bg-primary/10 text-primary" },
-  on_hold: { label: "保留", badge: "bg-warning/15 text-warning" },
-  done: { label: "完了", badge: "bg-success/10 text-success" },
-  archived: { label: "アーカイブ", badge: "bg-muted/10 text-muted" },
+  ヒアリング: { label: "ヒアリング", badge: "bg-muted/10 text-muted" },
+  デモ作成: { label: "デモ作成", badge: "bg-accent/10 text-accent" },
+  確認待ち: { label: "確認待ち", badge: "bg-warning/15 text-warning" },
+  導入対応: { label: "導入対応", badge: "bg-primary/10 text-primary" },
+  テスト運用: { label: "テスト運用", badge: "bg-accent/10 text-accent" },
+  運用中: { label: "運用中", badge: "bg-success/10 text-success" },
+  完了: { label: "完了", badge: "bg-success/15 text-success" },
+  アーカイブ: { label: "アーカイブ", badge: "bg-muted/10 text-muted" },
 };
 
 export const PROJECT_STATUS_OPTIONS: ProjectStatus[] = [
-  "draft",
-  "active",
-  "on_hold",
-  "done",
-  "archived",
+  "ヒアリング",
+  "デモ作成",
+  "確認待ち",
+  "導入対応",
+  "テスト運用",
+  "運用中",
+  "完了",
+  "アーカイブ",
 ];
 
-// 一覧（/projects）で既定表示する「作業中」ステータス。done/archived は /archive へ。
-export const ACTIVE_STATUSES: ProjectStatus[] = ["draft", "active", "on_hold"];
+// 進行フロー（フロー図用の順序）。アーカイブは終端の別状態。
+export const PROJECT_STATUS_FLOW: ProjectStatus[] = [
+  "ヒアリング",
+  "デモ作成",
+  "確認待ち",
+  "導入対応",
+  "テスト運用",
+  "運用中",
+  "完了",
+];
+
+// 一覧（/projects）で既定表示する「作業中」。完了/アーカイブは /archive へ。
+export const ACTIVE_STATUSES: ProjectStatus[] = [
+  "ヒアリング",
+  "デモ作成",
+  "確認待ち",
+  "導入対応",
+  "テスト運用",
+  "運用中",
+];
+export const ARCHIVE_STATUSES: ProjectStatus[] = ["完了", "アーカイブ"];
 
 // 初回に自動生成するカテゴリ（warm/vibrant・spec §3.1 の例）
 export const DEFAULT_CATEGORIES: { name: string; color: string }[] = [

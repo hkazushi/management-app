@@ -22,7 +22,7 @@ function parseProjectForm(formData: FormData) {
     name: String(formData.get("name") ?? "").trim(),
     client: String(formData.get("client") ?? "").trim() || null,
     category_id: String(formData.get("category_id") ?? "") || null,
-    status: (String(formData.get("status") ?? "active") as ProjectStatus),
+    status: String(formData.get("status") ?? "ヒアリング") as ProjectStatus,
     due_date: String(formData.get("due_date") ?? "") || null,
     note: String(formData.get("note") ?? "").trim() || null,
   };
@@ -66,25 +66,18 @@ export async function deleteProject(id: string) {
   redirect("/projects");
 }
 
-// 一覧からその場で素早く案件を追加（名前だけ・active）
+// 一覧からその場で素早く案件を追加（名前だけ・ヒアリングで開始）
 export async function createQuickProject(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return;
   const supabase = await createClient();
-  await supabase.from("projects").insert({ name, status: "active" });
-  revalidatePath("/projects");
-}
-
-// draft → active 確定（一覧からワンタップ）
-export async function activateProject(id: string) {
-  const supabase = await createClient();
-  await supabase.from("projects").update({ status: "active" }).eq("id", id);
+  await supabase.from("projects").insert({ name, status: "ヒアリング" });
   revalidatePath("/projects");
 }
 
 // 一覧からステータスを直接変更
 export async function setProjectStatus(id: string, formData: FormData) {
-  const status = String(formData.get("status") ?? "active") as ProjectStatus;
+  const status = String(formData.get("status") ?? "ヒアリング") as ProjectStatus;
   const supabase = await createClient();
   await supabase.from("projects").update({ status }).eq("id", id);
   revalidatePath("/projects");
