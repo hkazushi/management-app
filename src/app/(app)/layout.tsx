@@ -22,15 +22,24 @@ export default function AppLayout({
               案件・タスク管理
             </span>
           </Link>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-black/5 hover:text-danger"
+          <div className="flex items-center gap-1">
+            <Link
+              href="/settings"
+              aria-label="設定・連携"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-black/5 hover:text-ink"
             >
-              <Icon name="lock" size={15} />
-              ロック
-            </button>
-          </form>
+              <Icon name="settings" size={17} />
+            </Link>
+            <form action={logout}>
+              <button
+                type="submit"
+                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-black/5 hover:text-danger"
+              >
+                <Icon name="lock" size={15} />
+                ロック
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 
