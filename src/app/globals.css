@@ -3,25 +3,25 @@
 @tailwind utilities;
 
 /*
-  ダーク×ネオン（プレミアム）。濃紺〜黒背景＋ガラス調カード＋発光アクセント（オレンジ/シアン）。
+  シンプルなダークテーマ。発光・グラデ・ブラーを抑え、フラットで落ち着いた配色。
   rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 10 13 24; /* 濃紺〜黒 */
-  --surface: 24 29 48; /* ソリッドなカード面（必要時） */
-  --elevated: 30 36 58;
-  --border: 56 64 92; /* 微かな境界（白10%相当の見え方） */
-  --ink: 236 240 250; /* ほぼ白 */
-  --muted: 150 162 190; /* 青みグレー */
-  --faint: 108 120 150;
+  --bg: 17 19 27; /* 落ち着いた濃いグレー */
+  --surface: 28 31 42;
+  --elevated: 36 40 54;
+  --border: 58 63 80;
+  --ink: 233 236 243;
+  --muted: 150 158 176;
+  --faint: 110 118 138;
 
-  --primary: 255 138 76; /* ネオンオレンジ */
-  --primary-deep: 255 110 48;
-  --accent: 56 224 232; /* ネオンシアン */
+  --primary: 240 130 60; /* オレンジ（控えめ） */
+  --primary-deep: 222 104 38;
+  --accent: 92 165 255; /* 青（アクセント・控えめ） */
 
-  --success: 52 211 153;
-  --warning: 251 191 36;
-  --danger: 248 113 113;
+  --success: 60 190 130;
+  --warning: 222 160 60;
+  --danger: 232 96 96;
 }
 
 html,
@@ -31,50 +31,38 @@ body {
 }
 
 body {
-  background:
-    radial-gradient(900px 500px at 100% -5%, rgb(var(--primary) / 0.16), transparent 60%),
-    radial-gradient(900px 520px at -8% 4%, rgb(var(--accent) / 0.12), transparent 58%),
-    radial-gradient(700px 700px at 50% 120%, rgb(var(--accent) / 0.08), transparent 60%),
-    rgb(var(--bg));
-  background-attachment: fixed;
+  background-color: rgb(var(--bg));
   color: rgb(var(--ink));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 @layer components {
-  /* ガラスカード：半透明＋ブラー＋微発光ボーダー */
+  /* フラットなカード（ブラーなし・薄い境界） */
   .card {
-    @apply rounded-2xl shadow-card backdrop-blur-xl;
-    background: rgb(255 255 255 / 0.045);
-    border: 1px solid rgb(255 255 255 / 0.1);
-  }
-  .glass {
-    @apply backdrop-blur-xl;
-    background: rgb(255 255 255 / 0.045);
-    border: 1px solid rgb(255 255 255 / 0.1);
+    @apply rounded-xl;
+    background: rgb(255 255 255 / 0.028);
+    border: 1px solid rgb(255 255 255 / 0.08);
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-to-br from-primary to-primary-deep px-4 py-2.5 text-sm font-semibold text-white shadow-glow transition active:scale-[0.98] hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60;
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-deep active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-xl px-3.5 py-2 text-sm font-medium text-ink transition;
-    background: rgb(255 255 255 / 0.05);
-    border: 1px solid rgb(255 255 255 / 0.12);
+    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-ink transition;
+    background: rgb(255 255 255 / 0.04);
+    border: 1px solid rgb(255 255 255 / 0.1);
   }
   .btn-ghost:hover {
-    background: rgb(var(--primary) / 0.1);
-    border-color: rgb(var(--primary) / 0.4);
+    background: rgb(255 255 255 / 0.08);
   }
   .input {
-    @apply w-full rounded-xl px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint;
-    background: rgb(255 255 255 / 0.06);
-    border: 1px solid rgb(255 255 255 / 0.12);
+    @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint;
+    background: rgb(255 255 255 / 0.05);
+    border: 1px solid rgb(255 255 255 / 0.1);
   }
   .input:focus {
-    border-color: rgb(var(--accent) / 0.6);
-    background: rgb(255 255 255 / 0.09);
-    box-shadow: 0 0 0 4px rgb(var(--accent) / 0.15);
+    border-color: rgb(var(--primary) / 0.6);
+    background: rgb(255 255 255 / 0.07);
   }
   .chip {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
@@ -82,15 +70,14 @@ body {
   .section-label {
     @apply text-xs font-semibold uppercase tracking-wider text-faint;
   }
-  /* ダッシュボードの統計カード */
   .stat-card {
-    @apply rounded-2xl p-4 backdrop-blur-xl;
-    background: rgb(255 255 255 / 0.045);
-    border: 1px solid rgb(255 255 255 / 0.1);
+    @apply rounded-xl p-4;
+    background: rgb(255 255 255 / 0.028);
+    border: 1px solid rgb(255 255 255 / 0.08);
   }
 }
 
-/* select の選択肢はダーク背景だと白地になるブラウザ向けに調整 */
+/* ダーク背景でも select の選択肢を読めるように */
 select option {
   color: #1a1a1a;
 }

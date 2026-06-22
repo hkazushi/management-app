@@ -26,7 +26,7 @@ export function PhaseStepper({
       </div>
       <div className="h-2.5 w-full overflow-hidden rounded-full bg-bg">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+          className="h-full rounded-full bg-primary transition-all duration-500"
           style={{ width: `${overallPct}%` }}
         />
       </div>
@@ -48,7 +48,7 @@ export function PhaseStepper({
                     isDone
                       ? "bg-success text-white"
                       : isProg
-                        ? "bg-primary text-white shadow-glow"
+                        ? "bg-primary text-white"
                         : "border-2 border-border bg-surface text-faint"
                   }`}
                 >

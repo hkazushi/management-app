@@ -22,12 +22,6 @@ const toneText: Record<Tone, string> = {
   warning: "text-warning",
   accent: "text-accent",
 };
-const toneGlow: Record<Tone, string> = {
-  primary: "bg-primary/20",
-  danger: "bg-danger/20",
-  warning: "bg-warning/20",
-  accent: "bg-accent/20",
-};
 
 function StatCard({
   label,
@@ -41,10 +35,7 @@ function StatCard({
   tone: Tone;
 }) {
   return (
-    <div className="stat-card relative overflow-hidden">
-      <div
-        className={`pointer-events-none absolute -right-6 -top-8 h-20 w-20 rounded-full blur-2xl ${toneGlow[tone]}`}
-      />
+    <div className="stat-card">
       <div className="flex items-center justify-between">
         <span className="text-xs font-medium text-muted">{label}</span>
         <span className={toneText[tone]}>
@@ -100,27 +91,26 @@ export default async function TodayPage() {
     timeZone: "Asia/Tokyo",
   }).format(new Date());
 
-  const { data: tRaw } = await supabase
-    .from("tasks")
-    .select("id,title,due_date,priority,project_id")
-    .neq("status", "done")
-    .not("due_date", "is", null)
-    .order("due_date");
-  const tasks = (tRaw as TaskRow[] | null) ?? [];
-
-  const { data: pRaw } = await supabase
-    .from("projects")
-    .select("id,name,status,created_at");
-  const projects = (pRaw as ProjRow[] | null) ?? [];
+  const [tRes, pRes, aRes] = await Promise.all([
+    supabase
+      .from("tasks")
+      .select("id,title,due_date,priority,project_id")
+      .neq("status", "done")
+      .not("due_date", "is", null)
+      .order("due_date"),
+    supabase.from("projects").select("id,name,status,created_at"),
+    supabase
+      .from("activity_log")
+      .select("project_id,created_at")
+      .order("created_at", { ascending: false }),
+  ]);
+  const tasks = (tRes.data as TaskRow[] | null) ?? [];
+  const projects = (pRes.data as ProjRow[] | null) ?? [];
   const pName = new Map(projects.map((p) => [p.id, p.name]));
   const activeCount = projects.filter((p) => p.status === "active").length;
-
-  const { data: aRaw } = await supabase
-    .from("activity_log")
-    .select("project_id,created_at")
-    .order("created_at", { ascending: false });
   const acts =
-    (aRaw as { project_id: string | null; created_at: string }[] | null) ?? [];
+    (aRes.data as { project_id: string | null; created_at: string }[] | null) ??
+    [];
   const lastAct = new Map<string, string>();
   for (const a of acts) {
     if (a.project_id && !lastAct.has(a.project_id))
@@ -167,7 +157,7 @@ export default async function TodayPage() {
 
       {/* 放置案件アラート */}
       {stale.length > 0 && (
-        <div className="space-y-2 rounded-2xl border border-warning/30 bg-warning/10 p-4 backdrop-blur-xl">
+        <div className="space-y-2 rounded-xl border border-warning/30 bg-warning/10 p-4">
           <p className="flex items-center gap-1.5 text-sm font-semibold text-warning">
             <Icon name="alert" size={16} />
             {STALE_DAYS}日以上動きのない案件（{stale.length}）

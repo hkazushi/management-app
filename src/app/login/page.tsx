@@ -13,7 +13,7 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white shadow-glow">
+          <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
             <Icon name="flag" size={26} filled />
           </span>
           <h1 className="text-xl font-bold text-ink">案件・タスク管理</h1>

@@ -19,6 +19,10 @@ type Proj = {
   category_id: string | null;
   due_date: string | null;
 };
+export type Overview = Record<
+  string,
+  { total: number; done: number; nextDue: string | null }
+>;
 
 const STATUS_TABS: { label: string; value: "" | ProjectStatus }[] = [
   { label: "作業中", value: "" },
@@ -30,9 +34,11 @@ const STATUS_TABS: { label: string; value: "" | ProjectStatus }[] = [
 export function ProjectList({
   projects,
   categories,
+  overview,
 }: {
   projects: Proj[];
   categories: Cat[];
+  overview: Overview;
 }) {
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<"" | ProjectStatus>("");
@@ -167,6 +173,29 @@ export function ProjectList({
                   {p.client && (
                     <p className="truncate text-xs text-muted">{p.client}</p>
                   )}
+                  {(() => {
+                    const o = overview[p.id];
+                    if (!o || o.total === 0) return null;
+                    const pct = Math.round((100 * o.done) / o.total);
+                    return (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <span className="h-1 w-16 overflow-hidden rounded-full bg-white/10">
+                          <span
+                            className="block h-full rounded-full bg-primary"
+                            style={{ width: `${pct}%` }}
+                          />
+                        </span>
+                        <span className="text-[11px] tabular-nums text-faint">
+                          {o.done}/{o.total}
+                        </span>
+                        {o.nextDue && (
+                          <span className="text-[11px] text-warning">
+                            〆{o.nextDue}
+                          </span>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </Link>
                 <form action={setProjectStatus.bind(null, p.id)}>
                   <select

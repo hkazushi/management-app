@@ -56,13 +56,38 @@ export default async function ProjectDetailPage({
   await ensureDefaultPhases(id);
   const supabase = await createClient();
 
-  const { data: projRaw } = await supabase
-    .from("projects")
-    .select("*")
-    .eq("id", id)
-    .single();
-  const project = projRaw as Project | null;
+  // 互いに独立した取得は並列化（ローディング短縮）
+  const [projRes, phasesRes, tasksRes, progRes, resRes] = await Promise.all([
+    supabase.from("projects").select("*").eq("id", id).single(),
+    supabase
+      .from("phases")
+      .select("id,name,status,position")
+      .eq("project_id", id)
+      .order("position"),
+    supabase
+      .from("tasks")
+      .select("id,title,status,priority,due_date,phase_id,sort_order")
+      .eq("project_id", id)
+      .order("sort_order"),
+    supabase
+      .from("phase_progress")
+      .select("phase_id,total_count,progress_pct")
+      .eq("project_id", id),
+    supabase
+      .from("project_resources")
+      .select("id,type,label,url,account,note")
+      .eq("project_id", id)
+      .order("created_at"),
+  ]);
+
+  const project = projRes.data as Project | null;
   if (!project) notFound();
+  const phases = (phasesRes.data as Phase[] | null) ?? [];
+  const tasks = (tasksRes.data as Task[] | null) ?? [];
+  const progMap = new Map(
+    ((progRes.data as Prog[] | null) ?? []).map((p) => [p.phase_id, p]),
+  );
+  const resources = (resRes.data as Resource[] | null) ?? [];
 
   let category: CategoryLite | null = null;
   if (project.category_id) {
@@ -73,35 +98,6 @@ export default async function ProjectDetailPage({
       .single();
     category = (res.data as CategoryLite | null) ?? null;
   }
-
-  const { data: phasesRaw } = await supabase
-    .from("phases")
-    .select("id,name,status,position")
-    .eq("project_id", id)
-    .order("position");
-  const phases = (phasesRaw as Phase[] | null) ?? [];
-
-  const { data: tasksRaw } = await supabase
-    .from("tasks")
-    .select("id,title,status,priority,due_date,phase_id,sort_order")
-    .eq("project_id", id)
-    .order("sort_order");
-  const tasks = (tasksRaw as Task[] | null) ?? [];
-
-  const { data: progRaw } = await supabase
-    .from("phase_progress")
-    .select("phase_id,total_count,progress_pct")
-    .eq("project_id", id);
-  const progMap = new Map(
-    ((progRaw as Prog[] | null) ?? []).map((p) => [p.phase_id, p]),
-  );
-
-  const { data: resRaw } = await supabase
-    .from("project_resources")
-    .select("id,type,label,url,account,note")
-    .eq("project_id", id)
-    .order("created_at");
-  const resources = (resRaw as Resource[] | null) ?? [];
 
   const totalTasks = tasks.length;
   const doneTasks = tasks.filter((t) => t.status === "done").length;
@@ -163,7 +159,7 @@ export default async function ProjectDetailPage({
       </div>
 
       {/* AIサマリー（spec §3.4） */}
-      <div className="space-y-2 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/8 to-accent/5 p-4 shadow-card">
+      <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.07] p-4">
         <div className="flex items-center justify-between gap-2">
           <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
             <Icon name="sparkles" size={15} className="text-primary" filled />

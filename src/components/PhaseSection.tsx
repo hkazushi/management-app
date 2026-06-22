@@ -46,7 +46,7 @@ export function PhaseSection({
               isDone
                 ? "bg-success text-white"
                 : isProg
-                  ? "bg-primary text-white shadow-glow"
+                  ? "bg-primary text-white"
                   : "border-2 border-white/15 text-faint"
             }`}
           >

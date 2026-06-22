@@ -2,7 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ensureDefaultCategories } from "./actions";
 import { ACTIVE_STATUSES } from "@/lib/constants";
-import { ProjectList } from "@/components/ProjectList";
+import { ProjectList, type Overview } from "@/components/ProjectList";
 import { Icon } from "@/components/Icon";
 import type { ProjectStatus } from "@/types/database";
 
@@ -15,24 +15,40 @@ type Proj = {
   category_id: string | null;
   due_date: string | null;
 };
+type TaskAgg = {
+  project_id: string;
+  status: string;
+  due_date: string | null;
+};
 
-// 案件一覧（spec §3.1 / §3.9）。作業中（draft/active/on_hold）を表示。検索・絞り込み・追加は ProjectList。
+// 案件一覧（spec §3.1 / §3.9）。検索・絞り込み・追加・ステータス変更は ProjectList。
 export default async function ProjectsPage() {
-  await ensureDefaultCategories();
   const supabase = await createClient();
 
-  const { data: catsRaw } = await supabase
-    .from("categories")
-    .select("id,name,color")
-    .order("created_at");
-  const categories = (catsRaw as Cat[] | null) ?? [];
+  const [, catsRes, projRes, tasksRes] = await Promise.all([
+    ensureDefaultCategories(),
+    supabase.from("categories").select("id,name,color").order("created_at"),
+    supabase
+      .from("projects")
+      .select("id,name,client,status,category_id,due_date")
+      .in("status", ACTIVE_STATUSES)
+      .order("created_at", { ascending: false }),
+    supabase.from("tasks").select("project_id,status,due_date"),
+  ]);
 
-  const { data: pRaw } = await supabase
-    .from("projects")
-    .select("id,name,client,status,category_id,due_date")
-    .in("status", ACTIVE_STATUSES)
-    .order("created_at", { ascending: false });
-  const projects = (pRaw as Proj[] | null) ?? [];
+  const categories = (catsRes.data as Cat[] | null) ?? [];
+  const projects = (projRes.data as Proj[] | null) ?? [];
+  const tasks = (tasksRes.data as TaskAgg[] | null) ?? [];
+
+  // 案件ごとの大枠（進捗・次の期限）を集計
+  const overview: Overview = {};
+  for (const t of tasks) {
+    const o = (overview[t.project_id] ??= { total: 0, done: 0, nextDue: null });
+    o.total += 1;
+    if (t.status === "done") o.done += 1;
+    else if (t.due_date && (!o.nextDue || t.due_date < o.nextDue))
+      o.nextDue = t.due_date;
+  }
 
   return (
     <section className="space-y-4">
@@ -44,7 +60,11 @@ export default async function ProjectsPage() {
         </Link>
       </div>
 
-      <ProjectList projects={projects} categories={categories} />
+      <ProjectList
+        projects={projects}
+        categories={categories}
+        overview={overview}
+      />
 
       <p className="pt-1 text-center">
         <Link href="/archive" className="text-xs text-muted hover:text-ink">
