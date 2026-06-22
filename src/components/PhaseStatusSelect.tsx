@@ -16,10 +16,11 @@ export function PhaseStatusSelect({
   return (
     <form action={setPhaseStatus.bind(null, projectId, phaseId)}>
       <select
+        key={status}
         name="status"
         defaultValue={status}
         onChange={(e) => e.currentTarget.form?.requestSubmit()}
-        className={`rounded-md border border-border bg-bg px-1.5 py-0.5 text-xs font-medium ${PHASE_STATUS_META[status].text}`}
+        className={`cursor-pointer rounded-lg border border-white/12 bg-white/[0.06] px-2 py-1 text-xs font-semibold ${PHASE_STATUS_META[status].text}`}
         aria-label="フェーズ状態"
       >
         {PHASE_STATUS_OPTIONS.map((s) => (

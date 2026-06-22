@@ -82,6 +82,16 @@ export async function activateProject(id: string) {
   revalidatePath("/projects");
 }
 
+// 一覧からステータスを直接変更
+export async function setProjectStatus(id: string, formData: FormData) {
+  const status = String(formData.get("status") ?? "active") as ProjectStatus;
+  const supabase = await createClient();
+  await supabase.from("projects").update({ status }).eq("id", id);
+  revalidatePath("/projects");
+  revalidatePath("/archive");
+  revalidatePath(`/projects/${id}`);
+}
+
 export async function createCategory(formData: FormData) {
   const supabase = await createClient();
   const name = String(formData.get("name") ?? "").trim();

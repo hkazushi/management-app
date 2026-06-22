@@ -4,9 +4,9 @@ import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   createQuickProject,
-  activateProject,
+  setProjectStatus,
 } from "@/app/(app)/projects/actions";
-import { PROJECT_STATUS_META } from "@/lib/constants";
+import { PROJECT_STATUS_META, PROJECT_STATUS_OPTIONS } from "@/lib/constants";
 import { Icon } from "./Icon";
 import type { ProjectStatus } from "@/types/database";
 
@@ -168,23 +168,23 @@ export function ProjectList({
                     <p className="truncate text-xs text-muted">{p.client}</p>
                   )}
                 </Link>
-                {isDraft ? (
-                  <form action={activateProject.bind(null, p.id)}>
-                    <button
-                      type="submit"
-                      className="shrink-0 rounded-lg border border-primary/40 px-2.5 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-                    >
-                      確定
-                    </button>
-                  </form>
-                ) : (
-                  <span
-                    className={`chip ${PROJECT_STATUS_META[p.status].badge}`}
+                <form action={setProjectStatus.bind(null, p.id)}>
+                  <select
+                    key={p.status}
+                    name="status"
+                    defaultValue={p.status}
+                    onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                    aria-label="ステータス変更"
+                    className={`cursor-pointer rounded-full border-0 px-2.5 py-1 text-xs font-semibold ${PROJECT_STATUS_META[p.status].badge}`}
                   >
-                    {PROJECT_STATUS_META[p.status].label}
-                  </span>
-                )}
-                <Link href={`/projects/${p.id}`} className="text-faint">
+                    {PROJECT_STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {PROJECT_STATUS_META[s].label}
+                      </option>
+                    ))}
+                  </select>
+                </form>
+                <Link href={`/projects/${p.id}`} className="shrink-0 text-faint">
                   <Icon name="back" size={16} className="rotate-180" />
                 </Link>
               </li>

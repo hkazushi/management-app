@@ -75,6 +75,7 @@ export function TaskItem({
       {/* 優先度 */}
       <form action={setTaskPriority.bind(null, projectId, task.id)}>
         <select
+          key={task.priority}
           name="priority"
           defaultValue={task.priority}
           onChange={(e) => e.currentTarget.form?.requestSubmit()}

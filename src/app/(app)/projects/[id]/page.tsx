@@ -7,9 +7,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { CategoryChip } from "@/components/CategoryChip";
 import { DeleteProjectButton } from "@/components/DeleteProjectButton";
 import { PhaseStepper } from "@/components/PhaseStepper";
-import { PhaseStatusSelect } from "@/components/PhaseStatusSelect";
-import { AddTaskForm } from "@/components/AddTaskForm";
-import { TaskItem } from "@/components/TaskItem";
+import { PhaseSection } from "@/components/PhaseSection";
 import { AddResourceForm } from "@/components/AddResourceForm";
 import { ResourceItem } from "@/components/ResourceItem";
 import { SummaryButton } from "@/components/SummaryButton";
@@ -192,40 +190,21 @@ export default async function ProjectDetailPage({
       {/* フェーズ進捗 */}
       <PhaseStepper phases={stepperPhases} overallPct={overallPct} />
 
-      {/* フェーズ別タスク */}
-      <div className="space-y-4">
+      {/* フェーズ別タスク（折りたたみ式） */}
+      <div className="space-y-2.5">
         {phases.map((phase) => {
           const phaseTasks = tasks.filter((t) => t.phase_id === phase.id);
           const prog = progMap.get(phase.id);
+          const doneN = phaseTasks.filter((t) => t.status === "done").length;
           return (
-            <div key={phase.id} className="card p-4">
-
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <h2 className="font-semibold text-ink">{phase.name}</h2>
-                  {prog && prog.total_count > 0 && (
-                    <span className="text-xs text-muted">
-                      {prog.progress_pct}%（{phaseTasks.filter((t) => t.status === "done").length}/{prog.total_count}）
-                    </span>
-                  )}
-                </div>
-                <PhaseStatusSelect
-                  projectId={id}
-                  phaseId={phase.id}
-                  status={phase.status}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                {phaseTasks.map((task) => (
-                  <TaskItem key={task.id} projectId={id} task={task} />
-                ))}
-              </div>
-
-              <div className="mt-2.5">
-                <AddTaskForm projectId={id} phaseId={phase.id} />
-              </div>
-            </div>
+            <PhaseSection
+              key={phase.id}
+              projectId={id}
+              phase={phase}
+              tasks={phaseTasks}
+              done={doneN}
+              total={prog?.total_count ?? phaseTasks.length}
+            />
           );
         })}
       </div>
