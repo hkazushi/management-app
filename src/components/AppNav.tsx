@@ -4,12 +4,12 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 
-type IconName = "today" | "projects" | "search" | "archive";
+type IconName = "today" | "projects" | "check" | "search" | "archive";
 const items: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Today", icon: "today" },
   { href: "/projects", label: "案件", icon: "projects" },
+  { href: "/tasks", label: "タスク", icon: "check" },
   { href: "/search", label: "検索", icon: "search" },
-  { href: "/archive", label: "アーカイブ", icon: "archive" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
