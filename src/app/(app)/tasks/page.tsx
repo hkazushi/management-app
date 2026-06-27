@@ -1,8 +1,8 @@
-import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { TasksView, type Item } from "@/components/TasksView";
-import { Icon } from "@/components/Icon";
-import type { TaskPriority, TaskStatus } from "@/types/database";
+import { NewTaskForm } from "@/components/NewTaskForm";
+import { ACTIVE_STATUSES } from "@/lib/constants";
+import type { TaskPriority, TaskStatus, ProjectStatus } from "@/types/database";
 
 type TaskRow = {
   id: string;
@@ -14,7 +14,7 @@ type TaskRow = {
   phase_id: string | null;
   created_at: string;
 };
-type ProjRow = { id: string; name: string };
+type ProjRow = { id: string; name: string; status: ProjectStatus };
 type PhaseRow = { id: string; name: string };
 
 // 全案件横断のタスクビュー。何のプロジェクトの何の作業をいつまでに、を一望する。
@@ -26,7 +26,7 @@ export default async function TasksPage() {
       .select(
         "id,title,status,priority,due_date,project_id,phase_id,created_at",
       ),
-    supabase.from("projects").select("id,name"),
+    supabase.from("projects").select("id,name,status"),
     supabase.from("phases").select("id,name"),
   ]);
 
@@ -47,22 +47,27 @@ export default async function TasksPage() {
     phase_name: t.phase_id ? (phName.get(t.phase_id) ?? null) : null,
   }));
 
-  const projectOptions = Array.from(pName.entries())
-    .map(([id, name]) => ({ id, name }))
-    .sort((a, b) => a.name.localeCompare(b.name, "ja"));
+  // 新規追加先の案件は「作業中（完了/アーカイブ以外）」を優先表示
+  const working = new Set<string>(ACTIVE_STATUSES);
+  const projectOptions = projects
+    .map((p) => ({ id: p.id, name: p.name, status: p.status }))
+    .sort(
+      (a, b) =>
+        Number(!working.has(a.status)) - Number(!working.has(b.status)) ||
+        a.name.localeCompare(b.name, "ja"),
+    );
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-2xl font-bold tracking-tight text-ink">タスク</h1>
-        <Link href="/projects" className="btn-ghost">
-          <Icon name="projects" size={14} />
-          案件から追加
-        </Link>
+        <p className="mt-0.5 text-sm text-muted">
+          全案件横断。何の案件の何の作業をいつまでに。
+        </p>
       </div>
-      <p className="text-sm text-muted">
-        全案件横断。期限順／グループ順で並べ替え、完了や優先度をその場で操作できます。
-      </p>
+
+      {/* 新規追加（案件＋タイトル＋期限＋優先度） */}
+      <NewTaskForm projects={projectOptions} />
 
       <TasksView items={items} projects={projectOptions} />
     </section>

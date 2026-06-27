@@ -117,6 +117,62 @@ export async function deleteTask(projectId: string, taskId: string) {
   const supabase = await createClient();
   await supabase.from("tasks").delete().eq("id", taskId);
   revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/tasks");
+}
+
+// /tasks 画面から期限だけ直接更新
+export async function setTaskDueDate(
+  projectId: string,
+  taskId: string,
+  formData: FormData,
+) {
+  const v = String(formData.get("due_date") ?? "").trim();
+  const due_date = v || null;
+  const supabase = await createClient();
+  await supabase.from("tasks").update({ due_date }).eq("id", taskId);
+  revalidatePath(`/projects/${projectId}`);
+  revalidatePath("/tasks");
+}
+
+// /tasks 画面から新規タスク追加（案件と期限を一緒に指定。phaseは先頭フェーズに自動で紐付け）
+export async function createTaskGlobal(formData: FormData) {
+  const project_id = String(formData.get("project_id") ?? "");
+  const title = String(formData.get("title") ?? "").trim();
+  if (!project_id || !title) return;
+  const priority = String(formData.get("priority") ?? "mid") as TaskPriority;
+  const due_date = String(formData.get("due_date") ?? "") || null;
+
+  const supabase = await createClient();
+
+  // 先頭フェーズを既定として紐付け（無ければ phase なし）
+  await ensureDefaultPhases(project_id);
+  const { data: ph } = await supabase
+    .from("phases")
+    .select("id,sort:position")
+    .eq("project_id", project_id)
+    .order("position")
+    .limit(1);
+  const phase_id =
+    ((ph as { id: string }[] | null) ?? [])[0]?.id ?? null;
+
+  const { data: last } = await supabase
+    .from("tasks")
+    .select("sort_order")
+    .eq("phase_id", phase_id)
+    .order("sort_order", { ascending: false })
+    .limit(1);
+  const nextOrder = ((last?.[0]?.sort_order as number | undefined) ?? -1) + 1;
+
+  await supabase.from("tasks").insert({
+    project_id,
+    phase_id,
+    title,
+    priority,
+    due_date,
+    sort_order: nextOrder,
+  });
+  revalidatePath("/tasks");
+  revalidatePath(`/projects/${project_id}`);
 }
 
 // 並べ替え：同フェーズ内で隣のタスクと sort_order を入れ替える（spec §3.3）

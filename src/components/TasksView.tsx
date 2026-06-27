@@ -6,6 +6,7 @@ import {
   toggleTaskDone,
   setTaskStatus,
   setTaskPriority,
+  setTaskDueDate,
 } from "@/app/(app)/projects/[id]/actions";
 import {
   PRIORITY_META,
@@ -97,22 +98,33 @@ function TaskRow({ t }: { t: Item }) {
           {t.phase_name && (
             <span className="text-faint">{t.phase_name}</span>
           )}
-          {t.due_date && (
-            <span
-              className={`flex items-center gap-0.5 ${
+          <form action={setTaskDueDate.bind(null, t.project_id, t.id)}>
+            <label
+              className={`inline-flex cursor-pointer items-center gap-0.5 rounded px-1 py-0.5 transition hover:bg-black/[0.05] ${
                 overdue
                   ? "font-semibold text-danger"
                   : isToday
                     ? "font-semibold text-warning"
-                    : "text-muted"
+                    : t.due_date
+                      ? "text-muted"
+                      : "text-faint"
               }`}
             >
               <Icon name="calendar" size={10} />
-              {t.due_date}
-              {overdue && "（超過）"}
-              {isToday && "（今日）"}
-            </span>
-          )}
+              <input
+                key={t.due_date ?? "none"}
+                type="date"
+                name="due_date"
+                defaultValue={t.due_date ?? ""}
+                onChange={(e) => e.currentTarget.form?.requestSubmit()}
+                className="w-[7.5rem] cursor-pointer border-0 bg-transparent p-0 text-[11px] outline-none"
+                aria-label="期限"
+              />
+              {overdue && <span>超過</span>}
+              {isToday && <span>今日</span>}
+              {!t.due_date && <span>期限未設定</span>}
+            </label>
+          </form>
         </div>
       </div>
 
