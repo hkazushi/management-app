@@ -4,11 +4,18 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 
-type IconName = "today" | "projects" | "check" | "search" | "archive";
+type IconName =
+  | "today"
+  | "projects"
+  | "check"
+  | "calendar"
+  | "search"
+  | "archive";
 const items: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "Today", icon: "today" },
   { href: "/projects", label: "案件", icon: "projects" },
   { href: "/tasks", label: "タスク", icon: "check" },
+  { href: "/calendar", label: "カレンダー", icon: "calendar" },
   { href: "/search", label: "検索", icon: "search" },
 ];
 
@@ -30,18 +37,18 @@ export function AppNav() {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
-                className={`flex flex-col items-center gap-1 py-2 text-[11px] font-medium transition ${
+                className={`flex flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition ${
                   active ? "text-primary" : "text-muted hover:text-ink"
                 }`}
               >
                 <span
-                  className={`flex h-9 w-12 items-center justify-center rounded-full transition ${
+                  className={`flex h-8 w-10 items-center justify-center rounded-full transition ${
                     active ? "bg-primary/15" : ""
                   }`}
                 >
-                  <Icon name={item.icon} size={21} filled={active} />
+                  <Icon name={item.icon} size={20} filled={active} />
                 </span>
-                {item.label}
+                <span className="whitespace-nowrap">{item.label}</span>
               </Link>
             </li>
           );
