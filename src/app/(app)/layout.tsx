@@ -13,7 +13,7 @@ export default function AppLayout({
   return (
     <div className="min-h-dvh pb-24">
       <header className="sticky top-0 z-20 border-b border-border bg-bg">
-        <div className="mx-auto flex max-w-xl items-center justify-between px-4 py-3">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
               <Icon name="flag" size={16} filled />
@@ -43,7 +43,7 @@ export default function AppLayout({
         </div>
       </header>
 
-      <main className="mx-auto max-w-xl px-4 py-5">{children}</main>
+      <main className="mx-auto w-full max-w-3xl px-4 py-5">{children}</main>
 
       <AppNav />
     </div>

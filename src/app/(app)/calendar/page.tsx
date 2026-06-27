@@ -13,8 +13,8 @@ type TaskRow = {
   project_id: string;
 };
 type ProjRow = { id: string; name: string };
+type NoteRow = { id: string; date: string; body: string };
 
-// JST 基準で YYYY-MM-DD を整形
 const fmtDate = (d: Date) =>
   new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Tokyo" }).format(d);
 
@@ -24,14 +24,9 @@ function parseYM(sp: { y?: string; m?: string }): { year: number; month: number 
   const month = Number(sp.m) || today.getMonth() + 1; // 1-12
   return { year, month };
 }
+const ymHref = (y: number, m: number) => `/calendar?y=${y}&m=${m}`;
 
-function ymHref(y: number, m: number): string {
-  return `/calendar?y=${y}&m=${m}`;
-}
-
-// 月のセル群（前後の月でグリッドを埋める）を生成
 function buildGrid(year: number, month: number) {
-  // 月初の曜日（0=日）。日本では月曜始まりにする
   const first = new Date(year, month - 1, 1);
   const firstDow = (first.getDay() + 6) % 7; // 月=0..日=6
   const start = new Date(first);
@@ -63,28 +58,37 @@ export default async function CalendarPage({
   const sp = await searchParams;
   const { year, month } = parseYM(sp);
 
+  // 月の前後を少しはみ出した範囲のメモ・タスクを取得
+  const monthStart = `${year}-${String(month).padStart(2, "0")}-01`;
+  const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 };
+  const nextStart = `${next.y}-${String(next.m).padStart(2, "0")}-01`;
+
   const supabase = await createClient();
-  const [tRes, pRes] = await Promise.all([
+  const [tRes, pRes, nRes] = await Promise.all([
     supabase
       .from("tasks")
       .select("id,title,status,priority,due_date,project_id")
       .not("due_date", "is", null),
     supabase.from("projects").select("id,name"),
+    supabase
+      .from("calendar_notes")
+      .select("id,date,body")
+      .gte("date", monthStart)
+      .lt("date", nextStart),
   ]);
   const tasks = (tRes.data as TaskRow[] | null) ?? [];
   const projects = (pRes.data as ProjRow[] | null) ?? [];
+  const notes = (nRes.data as NoteRow[] | null) ?? [];
   const pName = new Map(projects.map((p) => [p.id, p.name]));
 
-  // 日付→タスク配列
-  const byDate = new Map<string, TaskRow[]>();
+  const tByDate = new Map<string, TaskRow[]>();
   for (const t of tasks) {
     if (!t.due_date) continue;
-    if (!byDate.has(t.due_date)) byDate.set(t.due_date, []);
-    byDate.get(t.due_date)!.push(t);
+    if (!tByDate.has(t.due_date)) tByDate.set(t.due_date, []);
+    tByDate.get(t.due_date)!.push(t);
   }
-  for (const [, arr] of byDate) {
+  for (const [, arr] of tByDate) {
     arr.sort((a, b) => {
-      // 未完了優先 → 高優先度 → タイトル
       const ad = a.status === "done" ? 1 : 0;
       const bd = b.status === "done" ? 1 : 0;
       if (ad !== bd) return ad - bd;
@@ -94,18 +98,21 @@ export default async function CalendarPage({
     });
   }
 
+  const nByDate = new Map<string, NoteRow[]>();
+  for (const n of notes) {
+    if (!nByDate.has(n.date)) nByDate.set(n.date, []);
+    nByDate.get(n.date)!.push(n);
+  }
+
   const cells = buildGrid(year, month);
   const todayIso = fmtDate(new Date());
 
   const prev = month === 1 ? { y: year - 1, m: 12 } : { y: year, m: month - 1 };
-  const next = month === 12 ? { y: year + 1, m: 1 } : { y: year, m: month + 1 };
 
   const monthOpen = tasks.filter(
     (t) =>
       t.due_date &&
-      t.due_date.startsWith(
-        `${year}-${String(month).padStart(2, "0")}`,
-      ) &&
+      t.due_date.startsWith(`${year}-${String(month).padStart(2, "0")}`) &&
       t.status !== "done",
   ).length;
   const monthOverdue = tasks.filter(
@@ -116,31 +123,36 @@ export default async function CalendarPage({
     <section className="space-y-4">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight text-ink">カレンダー</h1>
-        <Link href={ymHref(new Date().getFullYear(), new Date().getMonth() + 1)}
-          className="btn-ghost text-xs">
+        <Link
+          href={ymHref(
+            new Date().getFullYear(),
+            new Date().getMonth() + 1,
+          )}
+          className="btn-ghost text-xs"
+        >
           今日
         </Link>
       </div>
 
       <div className="card flex items-center justify-between gap-2 p-3">
-        <Link href={ymHref(prev.y, prev.m)} className="btn-icon" aria-label="前の月">
+        <Link href={ymHref(prev.y, prev.m)} className="btn-ghost" aria-label="前の月">
           <Icon name="back" size={16} />
         </Link>
         <div className="text-center">
-          <p className="text-lg font-bold text-ink">
+          <p className="text-xl font-bold text-ink">
             {year}年 {month}月
           </p>
           <p className="text-[11px] text-muted">
             未完了 {monthOpen} 件 / 期限超過 {monthOverdue} 件
           </p>
         </div>
-        <Link href={ymHref(next.y, next.m)} className="btn-icon" aria-label="次の月">
+        <Link href={ymHref(next.y, next.m)} className="btn-ghost" aria-label="次の月">
           <Icon name="back" size={16} className="rotate-180" />
         </Link>
       </div>
 
       {/* 曜日ヘッダー（月始まり） */}
-      <div className="grid grid-cols-7 gap-1 px-0.5 text-center text-[11px] font-semibold text-faint">
+      <div className="grid grid-cols-7 gap-1.5 px-0.5 text-center text-xs font-semibold text-faint">
         {["月", "火", "水", "木", "金", "土", "日"].map((w, i) => (
           <div
             key={w}
@@ -153,24 +165,26 @@ export default async function CalendarPage({
         ))}
       </div>
 
-      {/* 月グリッド */}
-      <div className="grid grid-cols-7 gap-1">
+      {/* 月グリッド（大きめ・タップで日詳細へ） */}
+      <div className="grid grid-cols-7 gap-1.5">
         {cells.map((cell) => {
-          const list = byDate.get(cell.iso) ?? [];
+          const list = tByDate.get(cell.iso) ?? [];
+          const notesHere = nByDate.get(cell.iso) ?? [];
           const isToday = cell.iso === todayIso;
-          const dow = cell.date.getDay(); // 0=日, 6=土
+          const dow = cell.date.getDay();
           return (
-            <div
+            <Link
               key={cell.iso}
-              className={`min-h-[78px] rounded-lg border p-1 text-left transition ${
+              href={`/calendar/${cell.iso}`}
+              className={`block min-h-[110px] rounded-lg border p-1.5 text-left transition sm:min-h-[124px] ${
                 cell.inMonth
-                  ? "border-border bg-surface"
-                  : "border-transparent bg-transparent opacity-50"
+                  ? "border-border bg-surface hover:border-primary/30 hover:bg-primary/5"
+                  : "border-transparent bg-transparent opacity-45"
               } ${isToday ? "ring-2 ring-primary/60" : ""}`}
             >
               <div className="flex items-center justify-between">
                 <span
-                  className={`text-[11px] font-semibold tabular-nums ${
+                  className={`text-xs font-semibold tabular-nums ${
                     isToday
                       ? "text-primary"
                       : dow === 0
@@ -182,27 +196,34 @@ export default async function CalendarPage({
                 >
                   {cell.date.getDate()}
                 </span>
-                {list.length > 0 && (
-                  <span className="text-[10px] tabular-nums text-faint">
-                    {list.length}
-                  </span>
-                )}
+                <div className="flex items-center gap-1 text-[10px]">
+                  {notesHere.length > 0 && (
+                    <span className="rounded bg-warning/15 px-1 text-warning">
+                      📝{notesHere.length}
+                    </span>
+                  )}
+                  {list.length > 0 && (
+                    <span className="tabular-nums text-faint">
+                      {list.length}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="mt-0.5 space-y-0.5">
-                {list.slice(0, 2).map((t) => {
+
+              <div className="mt-1 space-y-0.5">
+                {list.slice(0, 3).map((t) => {
                   const done = t.status === "done";
                   const overdue =
                     !done && t.due_date && t.due_date < todayIso;
                   return (
-                    <Link
+                    <div
                       key={t.id}
-                      href={`/projects/${t.project_id}`}
-                      className={`flex items-center gap-1 truncate rounded px-1 py-0.5 text-[10px] leading-tight ${
+                      className={`flex items-center gap-1 truncate rounded px-1 py-0.5 text-[11px] leading-tight ${
                         overdue
                           ? "bg-danger/10 text-danger"
                           : done
                             ? "bg-black/[0.04] text-faint line-through"
-                            : "bg-black/[0.04] text-ink hover:bg-primary/10"
+                            : "bg-black/[0.05] text-ink"
                       }`}
                       title={`${pName.get(t.project_id) ?? ""}: ${t.title}（${PRIORITY_META[t.priority].label}）`}
                     >
@@ -210,16 +231,21 @@ export default async function CalendarPage({
                         className={`h-1.5 w-1.5 shrink-0 rounded-full ${PRIORITY_DOT[t.priority]}`}
                       />
                       <span className="truncate">{t.title}</span>
-                    </Link>
+                    </div>
                   );
                 })}
-                {list.length > 2 && (
+                {list.length > 3 && (
                   <p className="px-1 text-[10px] text-muted">
-                    +{list.length - 2}
+                    +{list.length - 3}
+                  </p>
+                )}
+                {notesHere[0] && (
+                  <p className="truncate rounded bg-warning/10 px-1 py-0.5 text-[11px] italic text-warning">
+                    📝 {notesHere[0].body}
                   </p>
                 )}
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
@@ -236,7 +262,7 @@ export default async function CalendarPage({
         <span className="flex items-center gap-1">
           <span className="h-2 w-2 rounded-full bg-muted/50" />低
         </span>
-        <span className="ml-2 text-faint">タップで案件に移動</span>
+        <span className="ml-2 text-faint">日付タップで詳細・メモ追加</span>
       </div>
     </section>
   );
