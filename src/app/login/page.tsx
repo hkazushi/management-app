@@ -14,11 +14,11 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="mb-8 flex flex-col items-center text-center">
           <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
-            <Icon name="flag" size={26} filled />
+            <Icon name="mic" size={26} />
           </span>
-          <h1 className="text-xl font-bold text-ink">案件・タスク管理</h1>
+          <h1 className="text-xl font-bold text-ink">議事録</h1>
           <p className="mt-1 text-sm text-muted">
-            散らばった案件を1箇所に。
+            録音するだけで、議事録と宿題が残ります。
           </p>
         </div>
 

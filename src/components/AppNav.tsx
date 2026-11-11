@@ -4,23 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 
-type IconName =
-  | "today"
-  | "projects"
-  | "check"
-  | "calendar"
-  | "search"
-  | "archive";
+type IconName = "mic" | "doc" | "check" | "projects";
 const items: { href: string; label: string; icon: IconName }[] = [
-  { href: "/", label: "Today", icon: "today" },
+  { href: "/", label: "ホーム", icon: "mic" },
+  { href: "/meetings", label: "議事録", icon: "doc" },
+  { href: "/actions", label: "宿題", icon: "check" },
   { href: "/projects", label: "案件", icon: "projects" },
-  { href: "/tasks", label: "タスク", icon: "check" },
-  { href: "/calendar", label: "カレンダー", icon: "calendar" },
-  { href: "/search", label: "検索", icon: "search" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
-  if (href === "/") return pathname === "/";
+  if (href === "/") return pathname === "/" || pathname === "/record";
   return pathname === href || pathname.startsWith(href + "/");
 }
 

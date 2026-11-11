@@ -1,231 +1,130 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { deleteProject } from "../actions";
-import { ensureDefaultPhases } from "./actions";
-import { StatusBadge } from "@/components/StatusBadge";
-import { CategoryChip } from "@/components/CategoryChip";
-import { DeleteProjectButton } from "@/components/DeleteProjectButton";
-import { PhaseStepper } from "@/components/PhaseStepper";
-import { PhaseSection } from "@/components/PhaseSection";
-import { StatusFlow } from "@/components/StatusFlow";
-import { AddResourceForm } from "@/components/AddResourceForm";
-import { ResourceItem } from "@/components/ResourceItem";
-import { SummaryButton } from "@/components/SummaryButton";
+import { fmtDateTime, todayJST } from "@/lib/format";
 import { Icon } from "@/components/Icon";
-import type {
-  Database,
-  PhaseStatus,
-  TaskStatus,
-  TaskPriority,
-  ResourceType,
-} from "@/types/database";
+import { ActionRow } from "@/components/ActionRow";
+import { MeetingCard, type MeetingListItem } from "@/components/MeetingCard";
+import type { ActionItem, Project } from "@/types/database";
 
-type Project = Database["public"]["Tables"]["projects"]["Row"];
-type CategoryLite = { name: string; color: string };
-type Phase = {
-  id: string;
-  name: string;
-  status: PhaseStatus;
-  position: number;
-};
-type Task = {
-  id: string;
-  title: string;
-  status: TaskStatus;
-  priority: TaskPriority;
-  due_date: string | null;
-  phase_id: string | null;
-  sort_order: number;
-};
-type Prog = { phase_id: string; total_count: number; progress_pct: number };
-type Resource = {
-  id: string;
-  type: ResourceType;
-  label: string;
-  url: string | null;
-  account: string | null;
-  note: string | null;
-};
+type MeetingWithNotes = MeetingListItem & { decisions: string[]; next_agenda: string[] };
 
-export default async function ProjectDetailPage({
+// 案件ページ：次の打ち合わせ前に見る「前回のまとめ」と、これまでの議事録
+export default async function ProjectPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  await ensureDefaultPhases(id);
   const supabase = await createClient();
+  const today = todayJST();
 
-  // 互いに独立した取得は並列化（ローディング短縮）
-  const [projRes, phasesRes, tasksRes, progRes, resRes] = await Promise.all([
-    supabase.from("projects").select("*").eq("id", id).single(),
+  const [pRes, mRes, aRes] = await Promise.all([
+    supabase.from("projects").select("id,name,client,status").eq("id", id).maybeSingle(),
     supabase
-      .from("phases")
-      .select("id,name,status,position")
+      .from("meetings")
+      .select("id,project_id,title,status,started_at,duration_sec,summary,decisions,next_agenda")
       .eq("project_id", id)
-      .order("position"),
+      .order("started_at", { ascending: false })
+      .limit(50),
     supabase
-      .from("tasks")
-      .select("id,title,status,priority,due_date,phase_id,sort_order")
+      .from("action_items")
+      .select("id,meeting_id,project_id,owner,content,due_date,done")
       .eq("project_id", id)
-      .order("sort_order"),
-    supabase
-      .from("phase_progress")
-      .select("phase_id,total_count,progress_pct")
-      .eq("project_id", id),
-    supabase
-      .from("project_resources")
-      .select("id,type,label,url,account,note")
-      .eq("project_id", id)
-      .order("created_at"),
+      .eq("done", false)
+      .order("due_date", { ascending: true, nullsFirst: false }),
   ]);
 
-  const project = projRes.data as Project | null;
+  const project = pRes.data as unknown as Project | null;
   if (!project) notFound();
-  const phases = (phasesRes.data as Phase[] | null) ?? [];
-  const tasks = (tasksRes.data as Task[] | null) ?? [];
-  const progMap = new Map(
-    ((progRes.data as Prog[] | null) ?? []).map((p) => [p.phase_id, p]),
-  );
-  const resources = (resRes.data as Resource[] | null) ?? [];
-
-  let category: CategoryLite | null = null;
-  if (project.category_id) {
-    const res = await supabase
-      .from("categories")
-      .select("name,color")
-      .eq("id", project.category_id)
-      .single();
-    category = (res.data as CategoryLite | null) ?? null;
-  }
-
-  const totalTasks = tasks.length;
-  const doneTasks = tasks.filter((t) => t.status === "done").length;
-  const overallPct = totalTasks
-    ? Math.round((100 * doneTasks) / totalTasks)
-    : 0;
-
-  const stepperPhases = phases.map((p) => ({
-    id: p.id,
-    name: p.name,
-    status: p.status,
-    progress_pct: progMap.get(p.id)?.progress_pct ?? 0,
-    total: progMap.get(p.id)?.total_count ?? 0,
-  }));
+  const meetings = (mRes.data as unknown as MeetingWithNotes[] | null) ?? [];
+  const actions = (aRes.data as unknown as ActionItem[] | null) ?? [];
+  const last = meetings.find((m) => m.status === "done");
+  const lastDecisions = last && Array.isArray(last.decisions) ? last.decisions : [];
+  const lastAgenda = last && Array.isArray(last.next_agenda) ? last.next_agenda : [];
 
   return (
     <section className="space-y-5">
-      <Link
-        href="/projects"
-        className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink"
-      >
+      <Link href="/projects" className="inline-flex items-center gap-1 text-sm text-muted hover:text-ink">
         <Icon name="back" size={15} />
         案件一覧へ
       </Link>
 
-      <header className="space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <h1 className="text-2xl font-bold text-ink">{project.name}</h1>
-          <StatusBadge status={project.status} />
+      <header className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight text-ink">{project.name}</h1>
+          {project.client && <p className="mt-0.5 text-sm text-muted">{project.client}</p>}
         </div>
-        {project.client && (
-          <p className="text-sm text-muted">{project.client}</p>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          {category && (
-            <CategoryChip name={category.name} color={category.color} />
-          )}
-          {project.due_date && (
-            <span className="text-xs text-muted">期限 {project.due_date}</span>
-          )}
-        </div>
+        <Link href={`/record?project=${id}`} className="btn-primary shrink-0">
+          <Icon name="mic" size={16} />
+          録音
+        </Link>
       </header>
 
-      {project.note && (
-        <div className="card whitespace-pre-wrap p-4 text-sm leading-relaxed text-ink">
-          {project.note}
-        </div>
-      )}
-
-      <div className="flex items-center gap-2">
-        <Link href={`/projects/${id}/edit`} className="btn-ghost">
-          <Icon name="edit" size={15} />
-          編集
-        </Link>
-        <DeleteProjectButton
-          action={deleteProject.bind(null, id)}
-          name={project.name}
-        />
-      </div>
-
-      {/* 進行ステージのフロー図（現在地を強調・タップで変更） */}
-      <StatusFlow projectId={id} current={project.status} />
-
-      {/* AIサマリー（spec §3.4） */}
-      <div className="space-y-2 rounded-xl border border-primary/20 bg-primary/[0.07] p-4">
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="flex items-center gap-1.5 text-sm font-semibold text-ink">
-            <Icon name="sparkles" size={15} className="text-primary" filled />
-            AIサマリー
-          </h2>
-          {project.summary_updated_at && (
-            <span className="text-[11px] text-muted">
-              更新 {String(project.summary_updated_at).slice(0, 10)}
-            </span>
+      {last ? (
+        <div className="card space-y-4 p-4">
+          <div>
+            <h2 className="text-sm font-semibold text-ink">次の打ち合わせ前に</h2>
+            <p className="text-xs text-muted">
+              前回: {last.title}（{fmtDateTime(last.started_at)}）
+            </p>
+          </div>
+          {lastAgenda.length > 0 && (
+            <div>
+              <h3 className="mb-1 text-xs font-semibold text-muted">今回確認すること</h3>
+              <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
+                {lastAgenda.map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {lastDecisions.length > 0 && (
+            <div>
+              <h3 className="mb-1 text-xs font-semibold text-muted">前回決まったこと</h3>
+              <ul className="list-disc space-y-1 pl-5 text-sm leading-relaxed text-ink">
+                {lastDecisions.map((d, i) => (
+                  <li key={i}>{d}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {lastAgenda.length === 0 && lastDecisions.length === 0 && last.summary && (
+            <p className="text-sm leading-relaxed text-ink">{last.summary}</p>
           )}
         </div>
-        {project.summary ? (
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-ink">
-            {project.summary}
-          </p>
+      ) : (
+        <p className="card p-4 text-sm text-muted">
+          この案件の議事録はまだありません。「録音」から始めると、ここに前回のまとめが出ます。
+        </p>
+      )}
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-ink">未完了の宿題（{actions.length}）</h2>
+        {actions.length === 0 ? (
+          <p className="card p-4 text-sm text-muted">未完了の宿題はありません。</p>
         ) : (
-          <p className="text-sm text-muted">
-            ボタンで現状サマリーを生成します（フェーズ・タスク・活動ログを材料に）。
-          </p>
-        )}
-        <SummaryButton projectId={id} hasSummary={!!project.summary} />
-      </div>
-
-      {/* フェーズ進捗 */}
-      <PhaseStepper phases={stepperPhases} overallPct={overallPct} />
-
-      {/* フェーズ別タスク（折りたたみ式） */}
-      <div className="space-y-2.5">
-        {phases.map((phase) => {
-          const phaseTasks = tasks.filter((t) => t.phase_id === phase.id);
-          const prog = progMap.get(phase.id);
-          const doneN = phaseTasks.filter((t) => t.status === "done").length;
-          return (
-            <PhaseSection
-              key={phase.id}
-              projectId={id}
-              phase={phase}
-              tasks={phaseTasks}
-              done={doneN}
-              total={prog?.total_count ?? phaseTasks.length}
-            />
-          );
-        })}
-      </div>
-
-      {/* 情報・リソース（spec §3.5） */}
-      <div className="card space-y-2.5 p-4">
-        <div className="flex items-center justify-between">
-          <h2 className="font-semibold text-ink">情報・リソース</h2>
-          <span className="text-xs text-muted">リンク / アカウント / ツール</span>
-        </div>
-        {resources.length > 0 && (
           <div className="space-y-1.5">
-            {resources.map((r) => (
-              <ResourceItem key={r.id} projectId={id} resource={r} />
+            {actions.map((a) => (
+              <ActionRow
+                key={a.id}
+                item={a}
+                today={today}
+                meetingHref={a.meeting_id ? `/meetings/${a.meeting_id}` : undefined}
+                context={a.meeting_id ? "議事録を見る" : undefined}
+              />
             ))}
           </div>
         )}
-        <AddResourceForm projectId={id} />
-        <p className="text-[11px] text-muted">
-          パスワード本体は保存しません（パスワードマネージャーの所在をメモするだけ）。
-        </p>
+      </div>
+
+      <div className="space-y-2">
+        <h2 className="text-sm font-semibold text-ink">議事録（{meetings.length}）</h2>
+        <div className="space-y-2">
+          {meetings.map((m) => (
+            <MeetingCard key={m.id} meeting={m} />
+          ))}
+        </div>
       </div>
     </section>
   );
