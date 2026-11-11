@@ -186,9 +186,11 @@ function fromEnvFiles(root) {
         continue;
       }
       // 同じ接頭辞の *_EMAIL / *_USER などをログインIDとして添える
-      const prefix = name.replace(/_?(PASSWORD|PASSWD|PASS|PWD|PIN|SECRET|TOKEN|KEY)$/i, "");
+      // 末尾の番号（APP_AUTH_PASSWORD_2 の _2）は相手側にも付ける
+      const num = name.match(/_\d+$/)?.[0] ?? "";
+      const prefix = name.slice(0, name.length - num.length).replace(/_?(PASSWORD|PASSWD|PASS|PWD|PIN|SECRET|TOKEN|KEY)$/i, "");
       const idName = ["EMAIL", "USER", "USERNAME", "LOGIN", "ID"]
-        .map((s) => (prefix ? `${prefix}_${s}` : s))
+        .map((s) => (prefix ? `${prefix}_${s}` : s) + num)
         .find((n) => env[n]);
       found.push({
         key: `env:${rel}#${name}`,

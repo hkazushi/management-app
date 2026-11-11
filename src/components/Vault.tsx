@@ -122,6 +122,7 @@ export function Vault({
       setMaster("");
     } catch {
       setError("マスターパスワードが違います");
+      setMaster(""); // 入れ直しやすいように消す
     } finally {
       setBusy(false);
     }
