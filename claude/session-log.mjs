@@ -3,6 +3,7 @@
 // Claude Code の会話を要約して、議事録アプリへ自動で記録する。
 //   - 作業ログ（やったこと・残り）→ activity_log（action = 'session'）
 //   - 残り作業 → action_items（担当「自分」の宿題）
+//   - 記録のあと、その案件の URL・ログイン情報も集める（logpass scan。AI には送らない）
 //
 // 呼ばれ方（~/.claude/settings.json の Stop / SessionEnd フック）:
 //   node session-log.mjs hook        ← 標準入力にフックの JSON。すぐ終了し、本体は裏で動く
@@ -435,6 +436,13 @@ async function waitUntilIdle(transcriptPath) {
   return false;
 }
 
+// ついでに、この案件の URL・ログイン情報を集める（~/bin/logpass。無ければ何もしない）
+function collectLogpass(cwd) {
+  const bin = path.join(os.homedir(), "bin", "logpass");
+  if (!fs.existsSync(bin)) return;
+  spawn(process.execPath, [bin, "scan", "--cwd", cwd, "--quiet"], { detached: true, stdio: "ignore" }).unref();
+}
+
 async function main() {
   const [mode, ...rest_] = process.argv.slice(2);
 
@@ -472,6 +480,7 @@ async function main() {
       if (!idle) return;
     }
     await record({ sid, transcriptPath, cwd: cwd || process.cwd(), dry });
+    if (!dry) collectLogpass(cwd || process.cwd());
     return;
   }
 

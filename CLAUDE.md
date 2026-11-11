@@ -45,6 +45,7 @@ AI の呼び出しは `src/lib/ai.ts` にまとめてあり、Route Handler（`s
 | `0001`〜`0003` | 旧アプリのテーブル・RLS・ビュー（`projects` は今も使う） |
 | `0004` / `0005` | 旧アプリの Google 連携・カレンダーメモ（未使用） |
 | `0006_meetings.sql` | 議事録アプリの `meetings` / `meeting_segments` / `action_items` |
+| `0007_vault.sql` | ログパス。`vaults`（鍵）と `project_resources` の拡張（`secret_enc` ほか） |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
@@ -55,16 +56,23 @@ API も未ログインだと行が取れず 404 を返す作りにしている�
 
 ### `claude/` のスクリプトは、直したら設置先へコピーする
 
-`claude/session-log.mjs`（作業ログの自動記録）と `claude/shukudai.mjs`（宿題コマンド）は、
+`claude/session-log.mjs`（作業ログの自動記録）、`claude/shukudai.mjs`（宿題コマンド）、`claude/logpass.mjs`（URL・ログイン情報の収集）は、
 アプリ本体ではなくこのPCで動く。実際に使われるのはコピー先なので、直したら必ずコピーする。
 
 ```bash
 cp claude/session-log.mjs ~/.claude/hooks/session-log.mjs
 cp claude/shukudai.mjs ~/bin/shukudai
+cp claude/logpass.mjs ~/bin/logpass
 ```
 
 動作確認は `node claude/session-log.mjs run end <session_id> <会話ログのパス> "$PWD" --dry`（保存せず結果だけ出す）。
 実行の記録は `~/.claude/hooks/session-log.log` に残る。
+
+### パスワードは平文で DB に入れない・画面やログに出さない
+
+ログパスのパスワードは、必ず公開鍵で暗号化してから `project_resources.secret_enc` に入れる（`src/lib/vault.ts` / `claude/logpass.mjs`）。
+`url` `label` `account` `note` は平文なので、秘密の値を入れない（Webhook の URL は秘密として扱う）。
+`logpass` の動作確認は `logpass scan --dry --verbose`（値は出ず、有無だけ出る）。メモの中身を `cat` や `head` で直接出さない。
 
 ### 仕様変更は spec.md にも反映する
 
