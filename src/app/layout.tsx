@@ -9,12 +9,11 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "案件・タスク管理",
-  description:
-    "複数のクライアント案件をフェーズで可視化して一元管理する個人用アプリ",
+  title: "議事録",
+  description: "打ち合わせを録音すると、文字起こし・要約・宿題の抽出まで行う個人用アプリ",
 };
 
-// Today ビューはモバイル前提（spec §4）。端末幅に追従させる。
+// スマホで録音する前提。端末幅に追従させる。
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,

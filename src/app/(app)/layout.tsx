@@ -16,20 +16,13 @@ export default function AppLayout({
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
-              <Icon name="flag" size={16} filled />
+              <Icon name="mic" size={16} />
             </span>
             <span className="text-[15px] font-bold tracking-tight text-ink">
-              案件・タスク管理
+              議事録
             </span>
           </Link>
           <div className="flex items-center gap-1">
-            <Link
-              href="/settings"
-              aria-label="設定・連携"
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-muted transition hover:bg-black/5 hover:text-ink"
-            >
-              <Icon name="settings" size={17} />
-            </Link>
             <form action={logout}>
               <button
                 type="submit"

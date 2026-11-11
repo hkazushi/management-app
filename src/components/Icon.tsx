@@ -20,9 +20,32 @@ type IconName =
   | "alert"
   | "calendar"
   | "flag"
-  | "settings";
+  | "settings"
+  | "mic"
+  | "stop"
+  | "copy"
+  | "doc";
 
 const paths: Record<IconName, React.ReactNode> = {
+  mic: (
+    <>
+      <rect x="9" y="3" width="6" height="11" rx="3" />
+      <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+    </>
+  ),
+  stop: <rect x="6" y="6" width="12" height="12" rx="2" />,
+  copy: (
+    <>
+      <rect x="9" y="9" width="11" height="11" rx="2" />
+      <path d="M5 15V6a2 2 0 0 1 2-2h9" />
+    </>
+  ),
+  doc: (
+    <>
+      <path d="M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" />
+    </>
+  ),
   today: (
     <>
       <rect x="3" y="4" width="18" height="17" rx="3" />

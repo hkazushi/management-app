@@ -1,118 +1,87 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { ensureDefaultCategories } from "./actions";
-import { ACTIVE_STATUSES } from "@/lib/constants";
-import { ProjectList, type Overview } from "@/components/ProjectList";
+import { fmtDateTime } from "@/lib/format";
+import { createProject } from "../meetings/actions";
 import { Icon } from "@/components/Icon";
-import type { ProjectStatus } from "@/types/database";
+import type { Project } from "@/types/database";
 
-type Cat = { id: string; name: string; color: string };
-type Proj = {
-  id: string;
-  name: string;
-  client: string | null;
-  status: ProjectStatus;
-  category_id: string | null;
-  due_date: string | null;
-};
-type TaskAgg = {
-  project_id: string;
-  status: string;
-  due_date: string | null;
-};
-type PhaseAgg = {
-  project_id: string;
-  name: string;
-  status: string;
-  position: number;
-};
-type ActAgg = { project_id: string | null; created_at: string };
-
-// 案件一覧（spec §3.1 / §3.9）。検索・絞り込み・追加・ステータス変更は ProjectList。
+// 案件の一覧。打ち合わせの回数・未完了の宿題・最後に話した日が分かる。
 export default async function ProjectsPage() {
   const supabase = await createClient();
-
-  const [, catsRes, projRes, tasksRes, phasesRes, actsRes] = await Promise.all([
-    ensureDefaultCategories(),
-    supabase.from("categories").select("id,name,color").order("created_at"),
-    supabase
-      .from("projects")
-      .select("id,name,client,status,category_id,due_date")
-      .in("status", ACTIVE_STATUSES)
-      .order("created_at", { ascending: false }),
-    supabase.from("tasks").select("project_id,status,due_date"),
-    supabase
-      .from("phases")
-      .select("project_id,name,status,position")
-      .order("position"),
-    supabase
-      .from("activity_log")
-      .select("project_id,created_at")
-      .order("created_at", { ascending: false }),
+  const [pRes, mRes, aRes] = await Promise.all([
+    supabase.from("projects").select("id,name,client,status").neq("status", "アーカイブ"),
+    supabase.from("meetings").select("project_id,started_at").order("started_at", { ascending: false }),
+    supabase.from("action_items").select("project_id").eq("done", false),
   ]);
+  const projects = (pRes.data as unknown as Project[] | null) ?? [];
+  const meetings =
+    (mRes.data as unknown as { project_id: string | null; started_at: string }[] | null) ?? [];
+  const actions = (aRes.data as unknown as { project_id: string | null }[] | null) ?? [];
 
-  const categories = (catsRes.data as Cat[] | null) ?? [];
-  const projects = (projRes.data as Proj[] | null) ?? [];
-  const tasks = (tasksRes.data as TaskAgg[] | null) ?? [];
-  const phases = (phasesRes.data as PhaseAgg[] | null) ?? [];
-  const acts = (actsRes.data as ActAgg[] | null) ?? [];
+  const stats = new Map<string, { count: number; last: string | null; open: number }>();
+  const stat = (id: string) => {
+    if (!stats.has(id)) stats.set(id, { count: 0, last: null, open: 0 });
+    return stats.get(id)!;
+  };
+  for (const m of meetings) {
+    if (!m.project_id) continue;
+    const s = stat(m.project_id);
+    s.count += 1;
+    if (!s.last) s.last = m.started_at; // 新しい順に並んでいるので最初が最新
+  }
+  for (const a of actions) if (a.project_id) stat(a.project_id).open += 1;
 
-  // 案件ごとの大枠（進捗・次の期限・現在フェーズ・最終更新）を集計
-  const overview: Overview = {};
-  const ov = (pid: string) =>
-    (overview[pid] ??= {
-      total: 0,
-      done: 0,
-      nextDue: null,
-      phase: null,
-      lastActivity: null,
-    });
-  for (const t of tasks) {
-    const o = ov(t.project_id);
-    o.total += 1;
-    if (t.status === "done") o.done += 1;
-    else if (t.due_date && (!o.nextDue || t.due_date < o.nextDue))
-      o.nextDue = t.due_date;
-  }
-  // 現在フェーズ = in_progress、無ければ未完了の先頭、全部done なら「完了」
-  const byProjPhases = new Map<string, PhaseAgg[]>();
-  for (const ph of phases) {
-    if (!byProjPhases.has(ph.project_id)) byProjPhases.set(ph.project_id, []);
-    byProjPhases.get(ph.project_id)!.push(ph);
-  }
-  for (const [pid, list] of byProjPhases) {
-    const inProg = list.find((p) => p.status === "in_progress");
-    const firstOpen = list.find((p) => p.status !== "done");
-    ov(pid).phase = inProg?.name ?? firstOpen?.name ?? "完了";
-  }
-  // 最終更新（activity_log は created_at desc 済み）
-  for (const a of acts) {
-    if (!a.project_id) continue;
-    const o = ov(a.project_id);
-    if (!o.lastActivity) o.lastActivity = a.created_at;
-  }
+  // 最近話した案件を上に、打ち合わせのない案件は名前順で下に
+  const sorted = [...projects].sort((a, b) => {
+    const la = stats.get(a.id)?.last ?? "";
+    const lb = stats.get(b.id)?.last ?? "";
+    if (la !== lb) return la < lb ? 1 : -1;
+    return a.name.localeCompare(b.name, "ja");
+  });
 
   return (
     <section className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight text-ink">案件</h1>
-        <Link href="/projects/new" className="btn-ghost">
-          <Icon name="edit" size={14} />
-          詳細追加
-        </Link>
-      </div>
+      <h1 className="text-2xl font-bold tracking-tight text-ink">案件</h1>
 
-      <ProjectList
-        projects={projects}
-        categories={categories}
-        overview={overview}
-      />
+      <form action={createProject} className="flex flex-wrap gap-2">
+        <input name="name" required placeholder="案件名を追加" className="input min-w-[10rem] flex-1" />
+        <input name="client" placeholder="クライアント（任意）" className="input w-44" />
+        <button type="submit" className="btn-ghost shrink-0">
+          <Icon name="plus" size={15} />
+          追加
+        </button>
+      </form>
 
-      <p className="pt-1 text-center">
-        <Link href="/archive" className="text-xs text-muted hover:text-ink">
-          完了・アーカイブを見る →
-        </Link>
-      </p>
+      {sorted.length === 0 ? (
+        <p className="card p-8 text-center text-sm text-muted">案件がまだありません。</p>
+      ) : (
+        <ul className="overflow-hidden rounded-xl border border-border">
+          {sorted.map((p, i) => {
+            const s = stats.get(p.id);
+            return (
+              <li key={p.id} className={i > 0 ? "border-t border-border" : ""}>
+                <Link
+                  href={`/projects/${p.id}`}
+                  className="flex items-center gap-3 bg-surface px-4 py-3 transition hover:bg-primary/5"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-medium text-ink">{p.name}</p>
+                    <p className="truncate text-xs text-muted">
+                      {p.client ? `${p.client}・` : ""}
+                      {s?.last ? `最後の打ち合わせ ${fmtDateTime(s.last)}` : "打ち合わせの記録なし"}
+                    </p>
+                  </div>
+                  {s && s.open > 0 && (
+                    <span className="chip shrink-0 bg-primary/10 text-primary">宿題 {s.open}</span>
+                  )}
+                  <span className="shrink-0 text-xs tabular-nums text-muted">{s?.count ?? 0}回</span>
+                  <Icon name="back" size={15} className="shrink-0 rotate-180 text-faint" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
     </section>
   );
 }
