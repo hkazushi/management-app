@@ -53,6 +53,19 @@ AI の呼び出しは `src/lib/ai.ts` にまとめてあり、Route Handler（`s
 「なぜかデータが0件で返る」ときは、まず RLS ポリシーを疑う。認証済みセッションで実行されているかを確認する。
 API も未ログインだと行が取れず 404 を返す作りにしている。
 
+### `claude/` のスクリプトは、直したら設置先へコピーする
+
+`claude/session-log.mjs`（作業ログの自動記録）と `claude/shukudai.mjs`（宿題コマンド）は、
+アプリ本体ではなくこのPCで動く。実際に使われるのはコピー先なので、直したら必ずコピーする。
+
+```bash
+cp claude/session-log.mjs ~/.claude/hooks/session-log.mjs
+cp claude/shukudai.mjs ~/bin/shukudai
+```
+
+動作確認は `node claude/session-log.mjs run end <session_id> <会話ログのパス> "$PWD" --dry`（保存せず結果だけ出す）。
+実行の記録は `~/.claude/hooks/session-log.log` に残る。
+
 ### 仕様変更は spec.md にも反映する
 
 仕様に関わる変更を実装したら、**コードだけでなく spec.md も更新する**。
@@ -75,3 +88,8 @@ API も未ログインだと行が取れず 404 を返す作りにしている�
 - **`npm run lint` は ESLint の設定ファイルが無いと対話プロンプトで止まる**（2026-11）。`.eslintrc.json` を消さない。
 - **zsh では未クォートの変数が単語分割されない**（2026-06）。
   `for f in $files` は1要素として回る。ファイル一括処理は `find -print0 | while read -d ''` を使う。`--include=*.tsx` もクォートが必要。
+- **日本語のパスは `fs.realpathSync` の結果と DB の文字列が一致しないことがある**（2026-11）。
+  macOS は「ダ」「プ」などを NFD（濁点が別の文字）で返す場合があり、見た目が同じでも `===` が false になる。
+  パスを比べる前に両方 `.normalize("NFC")` する。
+- **`projects.repo_path` は 2026-09 のフォルダ移動前のパス（`~/my-work/...`）のまま**（2026-11）。
+  ホーム直下のシンボリックリンクで今も有効。案件の照合は文字列ではなく実体のパス（realpath）で比べる。

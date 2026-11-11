@@ -5,6 +5,7 @@ import { fmtDateTime, todayJST } from "@/lib/format";
 import { Icon } from "@/components/Icon";
 import { ActionRow } from "@/components/ActionRow";
 import { MeetingCard, type MeetingListItem } from "@/components/MeetingCard";
+import { WorkLogCard, WORK_LOG_COLUMNS, type WorkLogRow } from "@/components/WorkLogCard";
 import type { ActionItem, Project } from "@/types/database";
 
 type MeetingWithNotes = MeetingListItem & { decisions: string[]; next_agenda: string[] };
@@ -19,7 +20,7 @@ export default async function ProjectPage({
   const supabase = await createClient();
   const today = todayJST();
 
-  const [pRes, mRes, aRes] = await Promise.all([
+  const [pRes, mRes, aRes, wRes] = await Promise.all([
     supabase.from("projects").select("id,name,client,status").eq("id", id).maybeSingle(),
     supabase
       .from("meetings")
@@ -33,12 +34,20 @@ export default async function ProjectPage({
       .eq("project_id", id)
       .eq("done", false)
       .order("due_date", { ascending: true, nullsFirst: false }),
+    supabase
+      .from("activity_log")
+      .select(WORK_LOG_COLUMNS)
+      .eq("project_id", id)
+      .eq("action", "session")
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   const project = pRes.data as unknown as Project | null;
   if (!project) notFound();
   const meetings = (mRes.data as unknown as MeetingWithNotes[] | null) ?? [];
   const actions = (aRes.data as unknown as ActionItem[] | null) ?? [];
+  const workLogs = (wRes.data as unknown as WorkLogRow[] | null) ?? [];
   const last = meetings.find((m) => m.status === "done");
   const lastDecisions = last && Array.isArray(last.decisions) ? last.decisions : [];
   const lastAgenda = last && Array.isArray(last.next_agenda) ? last.next_agenda : [];
@@ -126,6 +135,17 @@ export default async function ProjectPage({
           ))}
         </div>
       </div>
+
+      {workLogs.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="text-sm font-semibold text-ink">Claude Code の作業ログ</h2>
+          <div className="space-y-2">
+            {workLogs.map((w) => (
+              <WorkLogCard key={w.id} log={w} />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

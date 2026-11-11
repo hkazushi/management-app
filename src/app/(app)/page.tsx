@@ -4,14 +4,15 @@ import { todayJST } from "@/lib/format";
 import { Icon } from "@/components/Icon";
 import { ActionRow } from "@/components/ActionRow";
 import { MeetingCard, MEETING_LIST_COLUMNS, type MeetingListItem } from "@/components/MeetingCard";
+import { WorkLogCard, WORK_LOG_COLUMNS, type WorkLogRow } from "@/components/WorkLogCard";
 import type { ActionItem } from "@/types/database";
 
-// ホーム：録音の入口と、いま抱えている宿題、最近の議事録
+// ホーム：録音の入口と、いま抱えている宿題、最近の議事録、Claude Code の作業ログ
 export default async function HomePage() {
   const supabase = await createClient();
   const today = todayJST();
 
-  const [aRes, mRes, pRes] = await Promise.all([
+  const [aRes, mRes, pRes, wRes] = await Promise.all([
     supabase
       .from("action_items")
       .select("id,meeting_id,project_id,owner,content,due_date,done")
@@ -24,10 +25,17 @@ export default async function HomePage() {
       .order("started_at", { ascending: false })
       .limit(5),
     supabase.from("projects").select("id,name"),
+    supabase
+      .from("activity_log")
+      .select(WORK_LOG_COLUMNS)
+      .eq("action", "session")
+      .order("created_at", { ascending: false })
+      .limit(3),
   ]);
 
   const actions = (aRes.data as unknown as ActionItem[] | null) ?? [];
   const meetings = (mRes.data as unknown as MeetingListItem[] | null) ?? [];
+  const workLogs = (wRes.data as unknown as WorkLogRow[] | null) ?? [];
   const pName = new Map(
     ((pRes.data as unknown as { id: string; name: string }[] | null) ?? []).map((p) => [p.id, p.name]),
   );
@@ -115,6 +123,21 @@ export default async function HomePage() {
           </div>
         )}
       </div>
+
+      {workLogs.length > 0 && (
+        <div className="space-y-2">
+          <h2 className="font-semibold text-ink">最近の作業（Claude Code）</h2>
+          <div className="space-y-2">
+            {workLogs.map((w) => (
+              <WorkLogCard
+                key={w.id}
+                log={w}
+                projectName={w.project_id ? pName.get(w.project_id) : undefined}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

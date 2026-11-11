@@ -21,6 +21,17 @@ npm run dev
 DB は `supabase/migrations/` の SQL を番号順に Supabase の SQL Editor で実行する。
 議事録アプリに必要なのは `0001`（projects テーブル）、`0002`（RLS）、`0006`（meetings ほか）。
 
+## Claude Code との連携（任意）
+
+```bash
+cp claude/session-log.mjs ~/.claude/hooks/session-log.mjs
+cp claude/shukudai.mjs ~/bin/shukudai && chmod +x ~/bin/shukudai
+```
+
+`~/.claude/hooks/management-app.env` に `SUPABASE_URL` / `SUPABASE_SERVICE_KEY` / `MANAGEMENT_USER_ID` /
+`OPENROUTER_API_KEY` を書き、`~/.claude/settings.json` の Stop と SessionEnd フックに
+`node ~/.claude/hooks/session-log.mjs hook` を登録する。詳しくは spec.md の 7 章。
+
 ## 検証
 
 ```bash
