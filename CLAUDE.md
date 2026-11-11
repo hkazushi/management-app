@@ -65,7 +65,7 @@ cp claude/shukudai.mjs ~/bin/shukudai
 cp claude/logpass.mjs ~/bin/logpass
 ```
 
-動作確認は `node claude/session-log.mjs run end <session_id> <会話ログのパス> "$PWD" --dry`（保存せず結果だけ出す）。
+動作確認は `node claude/session-log.mjs run end <session_id> <会話ログのパス> "$PWD" --dry`（AI に送らず、日付・案件の割り振り・文字数だけ出す）。
 実行の記録は `~/.claude/hooks/session-log.log` に残る。
 
 ### パスワードは平文で DB に入れない・画面やログに出さない
@@ -101,3 +101,6 @@ cp claude/logpass.mjs ~/bin/logpass
   パスを比べる前に両方 `.normalize("NFC")` する。
 - **`projects.repo_path` は 2026-09 のフォルダ移動前のパス（`~/my-work/...`）のまま**（2026-11）。
   ホーム直下のシンボリックリンクで今も有効。案件の照合は文字列ではなく実体のパス（realpath）で比べる。
+- **Claude Code のセッションは何か月も続き、会話ログは1本で 100MB を超える**（2026-11）。
+  「1セッション = 1件」で記録すると中身がほとんど拾えない。日付ごとに分ける。ファイルは丸ごと読まず1行ずつ読む。
+  作業フォルダ（cwd）がホームのセッションも多いので、案件は触ったファイルのパスから決める。

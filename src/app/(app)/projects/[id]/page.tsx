@@ -40,7 +40,7 @@ export default async function ProjectPage({
       .eq("project_id", id)
       .eq("action", "session")
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(40),
   ]);
 
   const project = pRes.data as unknown as Project | null;
@@ -144,7 +144,7 @@ export default async function ProjectPage({
 
       {workLogs.length > 0 && (
         <div className="space-y-2">
-          <h2 className="text-sm font-semibold text-ink">Claude Code の作業ログ</h2>
+          <h2 className="text-sm font-semibold text-ink">Claude Code の作業ログ（{workLogs.length}）</h2>
           <div className="space-y-2">
             {workLogs.map((w) => (
               <WorkLogCard key={w.id} log={w} />
