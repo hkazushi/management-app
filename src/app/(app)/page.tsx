@@ -30,7 +30,7 @@ export default async function HomePage() {
       .select(WORK_LOG_COLUMNS)
       .eq("action", "session")
       .order("created_at", { ascending: false })
-      .limit(3),
+      .limit(5),
   ]);
 
   const actions = (aRes.data as unknown as ActionItem[] | null) ?? [];
