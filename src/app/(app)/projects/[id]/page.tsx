@@ -64,10 +64,16 @@ export default async function ProjectPage({
           <h1 className="text-2xl font-bold tracking-tight text-ink">{project.name}</h1>
           {project.client && <p className="mt-0.5 text-sm text-muted">{project.client}</p>}
         </div>
-        <Link href={`/record?project=${id}`} className="btn-primary shrink-0">
-          <Icon name="mic" size={16} />
-          録音
-        </Link>
+        <div className="flex shrink-0 items-center gap-2">
+          <Link href={`/accounts?project=${id}`} className="btn-ghost">
+            <Icon name="lock" size={15} />
+            ログパス
+          </Link>
+          <Link href={`/record?project=${id}`} className="btn-primary">
+            <Icon name="mic" size={16} />
+            録音
+          </Link>
+        </div>
       </header>
 
       {last ? (

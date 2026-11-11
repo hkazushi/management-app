@@ -4,12 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon } from "./Icon";
 
-type IconName = "mic" | "doc" | "check" | "projects";
+type IconName = "mic" | "doc" | "check" | "projects" | "lock";
 const items: { href: string; label: string; icon: IconName }[] = [
   { href: "/", label: "ホーム", icon: "mic" },
   { href: "/meetings", label: "議事録", icon: "doc" },
   { href: "/actions", label: "宿題", icon: "check" },
   { href: "/projects", label: "案件", icon: "projects" },
+  { href: "/accounts", label: "ログパス", icon: "lock" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
