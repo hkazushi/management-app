@@ -65,8 +65,9 @@ cp claude/shukudai.mjs ~/bin/shukudai
 cp claude/logpass.mjs ~/bin/logpass
 ```
 
-動作確認は `node claude/session-log.mjs run end <session_id> <会話ログのパス> "$PWD" --dry`（AI に送らず、日付・案件の割り振り・文字数だけ出す）。
-実行の記録は `~/.claude/hooks/session-log.log` に残る。
+ふだんの作業ログと宿題は、外部の AI を使わず、作業中の Claude が `shukudai record` などで書く（spec.md 7.1）。
+`session-log.mjs hook` は、記録が15分無いときに Claude へ催促するだけ。OpenRouter を呼ぶのは手動の `backfill` / `run` のみ。
+フックの確認は、フックの JSON（`session_id` / `transcript_path` / `cwd` / `hook_event_name`）を標準入力に渡して実行する。
 
 ### パスワードは平文で DB に入れない・画面やログに出さない
 
@@ -104,3 +105,7 @@ cp claude/logpass.mjs ~/bin/logpass
 - **Claude Code のセッションは何か月も続き、会話ログは1本で 100MB を超える**（2026-11）。
   「1セッション = 1件」で記録すると中身がほとんど拾えない。日付ごとに分ける。ファイルは丸ごと読まず1行ずつ読む。
   作業フォルダ（cwd）がホームのセッションも多いので、案件は触ったファイルのパスから決める。
+- **会話を外部の AI で要約して宿題を作ると、終わった宿題が溜まって情報が古くなる**（2026-11）。
+  数分で済む手順まで宿題になり、完了を付けない方針と重なって5日で23件溜まった。記録は状況を知っている作業中の Claude に書かせる。
+- **セッションを分岐・再開すると、元の会話が新しい会話ログに写される**（2026-11）。
+  会話ログごとに記録すると同じ日の作業が何件も重複する。作業ログは「案件 × 日付」で1件にまとめる。

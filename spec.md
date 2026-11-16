@@ -12,7 +12,7 @@
 - **入力しない**。録音ボタンを押すだけで記録が残る。旧アプリは手入力が続かず使われなくなった。
 - **読み返さなくても役に立つ**。議事録から宿題を抜き出して一覧にし、次の打ち合わせ前に前回のまとめを出す。
 - **事実だけを書く**。AI は文字起こしにある内容だけを使い、決定事項や宿題を推測で作らない。
-- 宿題の完了は人が手でチェックする。AI が勝手に完了にしない。
+- 宿題の完了は人が手でチェックする。例外は、Claude Code が自分で入れた宿題（7.1）で、終わったと分かれば Claude が完了にする。
 
 ## 2. 技術構成
 
@@ -80,27 +80,27 @@ PIN を入れると、サーバーが環境変数に持つ Supabase アカウン
 アプリの外（このPC）で動く仕組み。ソースは `claude/` にあり、`~/.claude/hooks/` と `~/bin/` へコピーして使う。
 どちらも Supabase を直接読み書きする（設定は `~/.claude/hooks/management-app.env`）。
 
-### 7.1 作業ログの自動記録（`claude/session-log.mjs`）
+### 7.1 作業ログと宿題の記録（外部の AI は使わない）
 
-- Claude Code の Stop / SessionEnd フックから呼ばれる。最後のやりとりから20分動きが無いとき、
-  またはセッション終了時に、会話を AI（OpenRouter の `google/gemini-2.5-flash`）で要約する。
-- **記録の単位は「セッション × 日付（日本時間）」で、1日1行**。Claude Code のセッションは何か月も続くことがあるため。
-  同じ日の続きがあれば、その日の行を書き直す。
-- 送るのは1日あたり最大1万6千字。キーやトークンらしい文字列は送る前に伏せ字にする。
-- **案件は、その日に触ったファイルの場所の多数決で決める**（作業フォルダがホームでも案件が分かる）。
-  `projects.repo_path` に当てはまればその案件。未登録でも、git リポジトリか `~/workspace/projects/` の
-  決まった階層のフォルダなら案件を作る。2026-09 以降に作業があったアーカイブ案件は「運用中」に戻す。
-- 「やったこと・残り」を `activity_log`（action = `session`）に保存し、ホーム・案件一覧・案件ページに表示する。
-- 直近2日の会話については、残りのうち本人が後でやる必要があるものを `action_items`（担当 `自分`）に追加する。
-  既存の未完了の宿題と同じ内容は追加しない。**完了チェックは付けない**。
-- `node ~/.claude/hooks/session-log.mjs backfill [--dry] [--since 日付]` で、過去の会話（`~/.claude/projects/`）を
-  まとめて取り込める。取り込みでは宿題を作らず、安いモデル（`gemini-2.5-flash-lite`）を使う。
+2026-11-16 に方式を変えた。それまでは会話を外部の AI（OpenRouter）で要約していたが、
+費用がかかるうえ、終わった宿題が残り続けて情報が古くなった。
 
-### 7.2 宿題の読み書き（`claude/shukudai.mjs` → `~/bin/shukudai`）
+- **作業している Claude Code 自身が書く**。一段落したら `shukudai record` で作業ログを、
+  `shukudai add --auto` / `shukudai done` で宿題を更新する（指示は `~/.claude/CLAUDE.md`）。
+- 書き忘れを防ぐため、Stop フック（`claude/session-log.mjs hook`）が、作業ログが15分以上書かれておらず
+  会話が進んでいるときに、Claude に記録を頼む（フックが停止を一度止めて、記録させる）。
+- 作業ログは**「案件 × 日付（日本時間）」で1件**（`activity_log`、action = `session`）。同じ日は足していく。
+  未登録のフォルダでも、git リポジトリか `~/workspace/projects/` の決まった階層なら案件を作る。
+- 宿題にするのは、明日以降に持ち越す用事だけ。数分で済む手順は入れない。
+- **完了の扱い**: Claude が `--auto` で入れた宿題（一覧に「（自動）」と出る。ID は `~/.claude/hooks/state/auto-tasks.json`）は、
+  会話で終わったと分かれば Claude が完了にしてよい。手入力と議事録由来の宿題は、ユーザーが言ったときだけ。
+- 過去分の取り込み（`node ~/.claude/hooks/session-log.mjs backfill [--dry] [--since 日付]`）だけは外部の AI で要約する。
+  手動で実行したときだけ動き、宿題は作らない。2026-11-11 に全履歴を取り込み済み。
 
-`shukudai`（一覧）/ `add` / `done` / `undo` / `log` / `projects`。
-Claude Code に「今日やることは？」「これ終わった」と言うと、Claude がこのコマンドを使う
-（使い方は `~/.claude/CLAUDE.md` に書いてある）。完了にするのはユーザーが言ったときだけ。
+### 7.2 宿題コマンド（`claude/shukudai.mjs` → `~/bin/shukudai`）
+
+`shukudai`（一覧）/ `add [--auto]` / `done` / `undo` / `log` / `record` / `projects`。
+Claude Code に「今日やることは？」「これ終わった」と言うと、Claude がこのコマンドを使う。
 
 ### 7.3 URL・ログイン情報の自動収集（`claude/logpass.mjs` → `~/bin/logpass`）
 
