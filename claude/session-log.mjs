@@ -1,24 +1,21 @@
 #!/usr/bin/env node
 // ============================================================
-// Claude Code の会話を要約して、議事録アプリへ自動で記録する。
-//   - 作業ログ（やったこと・残り）→ activity_log（action = 'session'）
-//   - 残り作業 → action_items（担当「自分」の宿題）
-//   - 記録のあと、その案件の URL・ログイン情報も集める（logpass scan。AI には送らない）
+// Claude Code の作業を、議事録アプリの作業ログ（activity_log の action = 'session'）に残すための仕組み。
 //
 // 呼ばれ方（~/.claude/settings.json の Stop / SessionEnd フック）:
-//   node session-log.mjs hook        ← 標準入力にフックの JSON。すぐ終了し、本体は裏で動く
-// 手動:
-//   node session-log.mjs run end <session_id> <transcript_path> <cwd> [--dry]
-//   node session-log.mjs backfill [--dry] [--since 2026-09-01]   ← 過去の会話をまとめて取り込む
+//   node session-log.mjs hook        ← 標準入力にフックの JSON
 //
-// 方針:
-//   - 1つのセッションが何か月も続くので、記録の単位は「セッション × 日付（日本時間）」。1日1行
-//   - 案件は、その日に触ったファイルの場所から決める（作業フォルダがホームでも案件が分かるように）
-//   - Stop（返答のたび）では記録しない。最後のやりとりから 20 分動きが無ければ記録する
-//   - SessionEnd ではすぐ記録する
-//   - 宿題は追加するだけ。完了チェックは絶対に付けない（判断は人がする）
-//     過去分の取り込みでは宿題を作らない（古い「残り」が並ぶのを防ぐ）
-//   - 会話を AI に送る前に、キーやトークンらしい文字列は伏せ字にする
+// ふだんの記録（2026-11-16 から）: 外部の AI は使わない。
+//   - Stop フックで、作業ログが 15 分以上書かれていなければ、作業中の Claude 自身に記録を頼む
+//     （Claude が `shukudai record` / `shukudai add --auto` / `shukudai done` を実行する）
+//   - その場の状況を知っている Claude が書くので、終わった宿題もその場で完了にできる
+//   - SessionEnd と記録のタイミングで、URL・ログイン情報の収集（logpass scan）を走らせる
+//
+// 過去分の取り込みだけは外部の AI（OpenRouter）で要約する。手動で実行したときだけ動く:
+//   node session-log.mjs backfill [--dry] [--since 2026-09-01]
+//   node session-log.mjs run end <session_id> <transcript_path> <cwd> [--dry]
+//   - 記録の単位は「セッション × 日付（日本時間）」。案件は、その日に触ったファイルの場所から決める
+//   - 会話を AI に送る前に、キーやトークンらしい文字列は伏せ字にする。宿題は作らない
 //
 // 設定は ~/.claude/hooks/management-app.env（リポジトリには入れない）:
 //   SUPABASE_URL / SUPABASE_SERVICE_KEY / MANAGEMENT_USER_ID / OPENROUTER_API_KEY
@@ -41,7 +38,19 @@ const WORKSPACE = path.join(HOME, "workspace", "projects");
 // この下は「フォルダ1つ = 案件1つ」として扱うグループ
 const GROUPS = new Set(["comvace-work", "sai-work", "my-work", "aaa"]);
 
-const IDLE_MS = 20 * 60 * 1000; // 最後のやりとりからこの時間たったら記録する
+const NUDGE_MS = 15 * 60 * 1000; // 作業ログがこの時間書かれていなければ、Claude に記録を頼む
+const NUDGE_BYTES = 20000; // 前回から会話ログがこれだけ増えていなければ頼まない
+const NUDGE_TEXT = [
+  "［自動記録］しばらく作業ログが更新されていません。ここまでの作業を議事録アプリに記録してください。",
+  '1. `shukudai record --title "今日この案件でやったこと（30字以内）" --done "成果1" --done "成果2" --remaining "まだ残っていること"`',
+  "   （同じ日は1件に足されます。--done は前回の記録以降の分だけでよい。--remaining は今の時点の残り全部）",
+  "2. `shukudai` で宿題を見て、「（自動）」の付いたもののうち、この会話で終わった・不要になったと分かるものを `shukudai done <ID>` で完了にする。",
+  "   「（自動）」の無い宿題は、ユーザーが終わったと言ったものだけ完了にする。",
+  '3. 明日以降に持ち越す用事（相手の返事待ち、期限のある作業、次回に回すと決めた作業）があり、まだ宿題に無ければ `shukudai add --auto "内容"`。',
+  "   数分で済む操作や、この会話の続きですぐやる手順は入れない。",
+  "前回の記録から実質的な作業が無ければ、何もせずそのまま終えてよい。記録したら、ユーザーへの報告は「作業ログを更新しました」の1行だけにする。",
+].join("\n");
+const IDLE_MS = 20 * 60 * 1000; // （手動の run idle 用）最後のやりとりからこの時間たったら記録する
 const MAX_WAIT_MS = 12 * 60 * 60 * 1000; // 待機プロセスの寿命
 const DAY_CHARS = 16000; // 1日ぶんとして AI に送る会話の上限
 const MIN_CHARS = 300; // これより短い日は記録しない
@@ -520,7 +529,7 @@ async function record(ctx, { sid, transcriptPath, cwd, dry, backfill, since, rep
       for (let j = queue.shift(); j; j = queue.shift()) {
         try {
           const project = await ctx.ensureProject(j.target);
-          const wantTasks = !backfill && j.date >= taskFrom;
+          const wantTasks = false; // 宿題は作らない（ふだんは作業中の Claude が shukudai で入れる）
           let openItems = [];
           if (wantTasks) {
             const filter = project ? `project_id=eq.${project.id}` : "project_id=is.null";
@@ -689,7 +698,9 @@ async function main() {
   const flag = (name) => args.includes(name);
   const option = (name) => (args.includes(name) ? args[args.indexOf(name) + 1] : undefined);
 
-  // フックから呼ばれたとき：裏で本体を起動して、すぐ終了する（Claude を待たせない）
+  // フックから呼ばれたとき。外部の AI は使わない。
+  //   Stop: しばらく作業ログが書かれていなければ、作業中の Claude 自身に「記録して」と頼む
+  //   SessionEnd: URL・ログイン情報の収集だけ走らせる
   if (mode === "hook") {
     let input = {};
     try {
@@ -699,17 +710,37 @@ async function main() {
     }
     const sid = input.session_id;
     const tp = input.transcript_path;
+    const cwd = input.cwd ?? process.cwd();
     if (!sid || !tp) return;
-    const kind = input.hook_event_name === "SessionEnd" ? "end" : "idle";
-    // 待機中のプロセスがすでにいれば、Stop では何もしない
-    if (kind === "idle" && alive(readState(sid).waiterPid)) return;
-    const child = spawn(
-      process.execPath,
-      [fileURLToPath(import.meta.url), "run", kind, sid, tp, input.cwd ?? process.cwd()],
-      { detached: true, stdio: "ignore" },
-    );
-    if (kind === "idle") writeState(sid, { waiterPid: child.pid });
-    child.unref();
+    if (input.hook_event_name === "SessionEnd") return collectLogpass(cwd);
+    if (input.stop_hook_active) return; // 頼んだ直後の停止では、もう一度頼まない
+
+    let size = 0;
+    try {
+      size = fs.statSync(tp).size;
+    } catch {
+      return;
+    }
+    const now = Date.now();
+    const state = readState(sid);
+    if (!state.nudgeAt) {
+      writeState(sid, { nudgeAt: now, nudgeSize: size }); // 最初の停止では頼まない（ここから数える）
+      return;
+    }
+    // このフォルダ（またはその上下）で最後に作業ログを書いた時刻
+    let recorded = 0;
+    try {
+      const here = real(cwd) ?? cwd;
+      const map = JSON.parse(fs.readFileSync(path.join(STATE_DIR, "last-record.json"), "utf8"));
+      for (const [dir, at] of Object.entries(map)) if (under(dir, here) || under(here, dir)) recorded = Math.max(recorded, at);
+    } catch {
+      // まだ一度も書かれていない
+    }
+    if (now - Math.max(state.nudgeAt, recorded) < NUDGE_MS) return;
+    if (size - (state.nudgeSize ?? 0) < NUDGE_BYTES) return; // ほとんど動いていない
+    writeState(sid, { nudgeAt: now, nudgeSize: size });
+    collectLogpass(cwd);
+    process.stdout.write(JSON.stringify({ decision: "block", reason: NUDGE_TEXT }));
     return;
   }
 
