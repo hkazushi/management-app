@@ -30,6 +30,8 @@ export function AppNav() {
             <li key={item.href} className="flex-1">
               <Link
                 href={item.href}
+                // 先に中身まで取っておく。押した瞬間に切り替わる
+                prefetch={true}
                 aria-current={active ? "page" : undefined}
                 className={`flex flex-col items-center gap-0.5 rounded-full py-1.5 text-[10px] font-bold tracking-wider transition ${
                   active ? "bg-sun/15 text-sun" : "text-[#FAF4E4]/60 hover:text-[#FAF4E4]"

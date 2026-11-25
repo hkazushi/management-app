@@ -7,7 +7,7 @@ import { Meerkat } from "@/components/Meerkat";
 import { SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR } from "@/lib/colors";
 import { addDays, diffDays, fmtDay, fmtDayLong, fmtTimeRange, todayJST, yen } from "@/lib/format";
-import { externalColor, getMembers, whoOf } from "@/lib/members";
+import { externalColor, getMembers, whoOf, currentUserId } from "@/lib/members";
 import { fixedLines, monthSummary, oneOffLine, statusLabel } from "@/lib/money";
 import { payFixed, setOneOffPaid } from "./money/actions";
 import type { EventRow, ExternalEvent, FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsGoal, Wish } from "@/types/database";
@@ -21,9 +21,7 @@ export default async function HomePage() {
 
   const [
     members,
-    {
-      data: { user },
-    },
+    userId,
     eRes,
     cRes,
     pRes,
@@ -35,7 +33,7 @@ export default async function HomePage() {
     xRes,
   ] = await Promise.all([
     getMembers(supabase),
-    supabase.auth.getUser(),
+    currentUserId(supabase),
     supabase
       .from("events")
       .select("id,date,title,start_time,end_time,member_id,color,memo,batch_id")
@@ -97,7 +95,7 @@ export default async function HomePage() {
     .map((o) => oneOffLine(o, today))
     .filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
-  const me = members.find((m) => m.user_id === user?.id);
+  const me = members.find((m) => m.user_id === userId);
 
   // 期限が7日以内、または過ぎているのに払っていないもの
   const urgent = lines.filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
