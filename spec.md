@@ -151,6 +151,8 @@ TimeTree の公式 API は 2023-12-22 に終了しているため、直接は書
 - 画面では、カレンダーとホームに点線の枠で「TimeTree・家族」と出る。編集・削除はできない。
 - 見える範囲は、取り込んだ本人だけ（`TIMETREE_SHARED=true` にすると、もう1人にも見える）。
 - 外に出す iCal（7章）には含めない（TimeTree に戻って二重に出るのを防ぐ）。
+- 30分おきの自動実行は、macOS の launchd で行う（`tools/com.futari-techo.timetree-sync.plist` を `~/Library/LaunchAgents/` に置いて読み込む。
+  入れ方・止め方はそのファイルの先頭に書いてある）。Mac がスリープ中は動かない。
 - 公式の手段ではないので、TimeTree の仕様変更で突然動かなくなることがある。失敗は `~/.config/futari-techo/timetree-sync.log` に残る。
 
 ## 8. スマホでの使い方
