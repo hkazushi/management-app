@@ -20,3 +20,9 @@ export function whoOf(members: Member[], memberId: string | null): { name: strin
   const m = members.find((x) => x.user_id === memberId);
   return m ? { name: m.name, color: m.color } : { name: "ふたり", color: "#C9A862" };
 }
+
+// ログイン中の人の id。署名をこの場で検証するので、getUser() のように毎回 Supabase まで往復しない
+export async function currentUserId(supabase: SupabaseClient): Promise<string | null> {
+  const { data } = await supabase.auth.getClaims();
+  return data?.claims?.sub ?? null;
+}

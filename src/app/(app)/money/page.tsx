@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { Meerkat } from "@/components/Meerkat";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { daysInMonth, fmtDay, fmtMonth, isMonth, shiftMonth, todayJST, yen } from "@/lib/format";
-import { getMembers } from "@/lib/members";
+import { getMembers, currentUserId } from "@/lib/members";
 import { fixedLines, monthSummary, oneOffLine, savingsTotals, statusLabel } from "@/lib/money";
 import {
   addOneOff,
@@ -39,9 +39,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
 
   const [
     members,
-    {
-      data: { user },
-    },
+    userId,
     cRes,
     pRes,
     iRes,
@@ -51,7 +49,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
     oRes,
   ] = await Promise.all([
     getMembers(supabase),
-    supabase.auth.getUser(),
+    currentUserId(supabase),
     supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active"),
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
     supabase.from("incomes").select("id,name,amount,active").eq("active", true).order("created_at", { ascending: true }),
@@ -75,7 +73,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
   const oneOffs = (oRes.data as unknown as OneOff[] | null) ?? [];
   const oneOffLines = oneOffs.map((o) => oneOffLine(o, today));
 
-  const me = members.find((x) => x.user_id === user?.id);
+  const me = members.find((x) => x.user_id === userId);
   const lines = fixedLines(costs, payments, month, today);
   const sum = monthSummary(lines, incomes, actuals, goals, month, oneOffs);
   const totals = savingsTotals(entries, month);
