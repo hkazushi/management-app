@@ -54,6 +54,7 @@
 | `0012_external_author.sql` | `external_events` に、入れた人の名前と TimeTree 上の色を追加 |
 | `0013_timetree_links.sql` | TimeTree に書き込んだ予定との対応表（`timetree_links`）。サービスキーだけが使う |
 | `0014_external_delete.sql` | TimeTree の予定を消す依頼（`delete_requested_at`）と、くり返しの印（`recurring`） |
+| `0015_wish_image_push.sql` | 欲しいものの写真（`wishes.image_url`）と、毎朝の通知の届け先（`push_subscriptions`。本人の行だけ） |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
@@ -71,6 +72,12 @@
 - 季節の飾りは `src/components/Season.tsx`。ふだんは CSS で隠してあり、`<html class="xmas">` のときだけ出る。
   期間を変えるときは同ファイルの `XMAS_FROM` / `XMAS_TO`。新しい季節を足すときも、同じ「class で出し分ける」形にする。
 - 案内役の絵は `src/components/Meerkat.tsx`（`stand` / `peek`）と `src/components/Manul.tsx`（`sit` / `peek`）。手書きの SVG。
+
+### 毎朝の通知はサービスキーで読む（自分で絞る）
+
+`/api/cron/morning` は Vercel の定期実行（`vercel.json`）から呼ばれ、ログインの外で動く。RLS が効かないので、
+お金と TimeTree の予定は `src/lib/morning.ts` の中で必ず `user_id` で絞っている。通知に項目を足すときも同じにする。
+必要な環境変数は `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `CRON_SECRET` / `SUPABASE_SERVICE_ROLE_KEY`（`.env.example`）。
 
 ### 仕様変更は spec.md にも反映する
 
@@ -115,3 +122,9 @@
   アイコンを変えたあとは、ホーム画面のアイコンをいったん消して追加し直さないと古いままになる。
 - **`new URL(import.meta.url).pathname` は、日本語のパスが `%E3%82…` に化ける**（2026-11）。
   このリポジトリはフォルダ名が日本語なので、そのまま `fs` に渡すと ENOENT になる。`fileURLToPath(import.meta.url)` を使う。
+- **zsh では `$urls` のような変数を引数に渡しても、改行や空白で分かれず1個の引数になる**（2026-11。上の単語分割と同じ罠）。
+  複数の値をスクリプトに渡すときは、ファイルに書いてスクリプト側で読む。
+- **iPhone の通知（Web Push）は、ホーム画面に追加したアプリの中でしか許可を出せない**（2026-11）。
+  Safari のタブで開いていると `PushManager` 自体が無い。設定画面はその場合「ホーム画面から開いて」と案内する。
+- **Vercel の無料枠の定期実行は1日1回まで、指定した時刻から最大1時間遅れる**（2026-11）。
+  毎朝の通知は `0 22 * * *`（UTC。日本の7時台）。時刻を変えるときは UTC で書く。

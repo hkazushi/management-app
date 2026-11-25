@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   // 一度開いた画面は、しばらく手元の控えをそのまま出す（タブを切り替えるたびに取り直さない）。
   // 追加・削除などをしたときは revalidatePath で控えが捨てられるので、自分の操作はすぐ反映される。
   // 相手が入れた分は、最大でこの秒数だけ遅れて見える。
+  // web-push は Node 向けの作りなので、まとめずにそのまま読ませる（まとめると読み込みに失敗する）
+  serverExternalPackages: ["web-push"],
   experimental: {
     staleTimes: { dynamic: 60, static: 60 },
   },

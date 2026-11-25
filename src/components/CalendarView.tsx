@@ -11,7 +11,7 @@ import {
   type EventInput,
 } from "@/app/(app)/calendar/actions";
 import { DEFAULT_COLOR, PALETTE, onColor } from "@/lib/colors";
-import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, weekdayOf, yen } from "@/lib/format";
+import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, repeatDates, shiftMonth, weekdayOf, yen, type Repeat } from "@/lib/format";
 import { cheer } from "@/lib/cheer";
 import { externalColor, whoOf } from "@/lib/members";
 import { WhoSelect } from "./Fields";
@@ -94,6 +94,8 @@ export function CalendarView({
   const [selected, setSelected] = useState<string[]>([initial ?? fallback]);
   const [editing, setEditing] = useState<string | null>(null);
   const [error, setError] = useState("");
+  const [repeat, setRepeat] = useState<Repeat>("none");
+  const [until, setUntil] = useState(""); // 空なら、3か月先の月末
   const [pending, start] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -144,14 +146,14 @@ export function CalendarView({
     setMulti(!multi);
   }
 
-  function add(input: EventInput, after?: () => void) {
+  function add(input: EventInput, after?: () => void, dates: string[] = selected) {
     setError("");
-    if (selected.length === 0) return setError("日付をタップして選んでください");
+    if (dates.length === 0) return setError("日付をタップして選んでください");
     start(async () => {
-      const res = await addEvents(selected, input);
+      const res = await addEvents(dates, input);
       if (res.error) return setError(res.error);
       after?.();
-      cheer(selected.length > 1 ? `${selected.length}日ぶん、入れました` : "予定を入れました");
+      cheer(dates.length > 1 ? `${dates.length}日ぶん、入れました` : "予定を入れました");
       if (multi) {
         setMulti(false);
         setSelected([selected[0]]);
@@ -160,6 +162,11 @@ export function CalendarView({
   }
 
   const single = !multi && selected.length === 1 ? selected[0] : null;
+
+  // くり返し（1日だけ選んでいるときに使える）。その日から「いつまで」までの日付にまとめて入れる
+  const untilDefault = single ? addDays(`${shiftMonth(single.slice(0, 7), 3)}-01`, -1) : "";
+  const untilValue = until || untilDefault;
+  const repeated = single && repeat !== "none" ? repeatDates(single, repeat, untilValue) : null;
   const dayEvents = single ? (byDate.get(single) ?? []) : [];
   const dayDues = single ? (dueByDate.get(single) ?? []) : [];
   const dayExternals = single ? (extByDate.get(single) ?? []) : [];
@@ -469,7 +476,15 @@ export function CalendarView({
           method="post"
           onSubmit={(ev) => {
             ev.preventDefault();
-            add(inputOf(new FormData(ev.currentTarget)), () => formRef.current?.reset());
+            add(
+              inputOf(new FormData(ev.currentTarget)),
+              () => {
+                formRef.current?.reset();
+                setRepeat("none");
+                setUntil("");
+              },
+              repeated ?? selected,
+            );
           }}
           className="space-y-3"
         >
@@ -479,6 +494,52 @@ export function CalendarView({
               {pending ? "…" : "追加"}
             </button>
           </div>
+          {single && (
+            <div className="space-y-2">
+              <div className="flex flex-wrap items-center gap-1.5" role="radiogroup" aria-label="くり返し">
+                <span className="mr-1 text-[11px] font-bold text-muted">くり返し</span>
+                {(
+                  [
+                    ["none", "なし"],
+                    ["weekly", "毎週"],
+                    ["biweekly", "2週ごと"],
+                    ["monthly", "毎月"],
+                  ] as [Repeat, string][]
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    role="radio"
+                    aria-checked={repeat === value}
+                    onClick={() => setRepeat(value)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+                      repeat === value ? "border-primary bg-primary text-[#FAF4E4]" : "border-line bg-surface text-muted"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {repeated && (
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-[11px] font-bold text-muted">
+                    いつまで
+                    <input
+                      type="date"
+                      value={untilValue}
+                      min={single}
+                      max={addDays(single, 366)}
+                      onChange={(ev) => setUntil(ev.target.value)}
+                      className="input !w-auto"
+                    />
+                  </label>
+                  <span className="text-xs font-bold text-ink">
+                    {repeated.length}回ぶん入ります{repeated.length >= 62 ? "（一度に入るのは62回まで）" : ""}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
           <details>
             <summary className="cursor-pointer text-xs font-bold text-muted">時間・誰の予定か・色・メモも入れる</summary>
             <div className="mt-3">

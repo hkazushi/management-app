@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { fetchOgImage } from "@/lib/ogimage";
 
 // 「https://」を省いて貼られても開けるようにする。http(s) 以外は保存しない
 function cleanUrl(raw: string): string | null {
@@ -31,7 +32,9 @@ export async function addWish(formData: FormData) {
   const row = fields(formData);
   if (!row.title) return;
   const supabase = await createClient();
-  await supabase.from("wishes").insert(row);
+  // リンクがあれば、商品の写真を取りに行く（取れなければ写真なし）
+  const image_url = row.url ? await fetchOgImage(row.url) : null;
+  await supabase.from("wishes").insert({ ...row, image_url });
   revalidatePath("/", "layout");
 }
 
@@ -39,7 +42,11 @@ export async function updateWish(id: string, formData: FormData) {
   const row = fields(formData);
   if (!row.title) return;
   const supabase = await createClient();
-  await supabase.from("wishes").update(row).eq("id", id);
+  // リンクが変わったときだけ、写真を取り直す
+  const { data } = await supabase.from("wishes").select("url,image_url").eq("id", id).maybeSingle();
+  const before = data as unknown as { url: string | null; image_url: string | null } | null;
+  const image_url = !row.url ? null : before?.url === row.url && before.image_url ? before.image_url : await fetchOgImage(row.url);
+  await supabase.from("wishes").update({ ...row, image_url }).eq("id", id);
   revalidatePath("/", "layout");
 }
 

@@ -69,7 +69,7 @@ export default async function WishesPage({
     getMembers(supabase),
     supabase
       .from("wishes")
-      .select("id,title,url,price,memo,member_id,done,done_at,created_at")
+      .select("id,title,url,image_url,price,memo,member_id,done,done_at,created_at")
       .order("created_at", { ascending: false }),
   ]);
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
@@ -203,6 +203,17 @@ export default async function WishesPage({
                       {w.price !== null && <span className="display text-sm">{yen(w.price)}</span>}
                     </div>
                   </div>
+                  {w.image_url && (
+                    // 外のサイトの画像をそのまま出す（next/image だと許可するサイトを先に決める必要がある）
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={w.image_url}
+                      alt=""
+                      loading="lazy"
+                      referrerPolicy="no-referrer"
+                      className="h-[72px] w-[72px] shrink-0 rounded-xl border border-line bg-surface object-cover"
+                    />
+                  )}
                 </div>
                 {w.url && (
                   <a
