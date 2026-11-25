@@ -1,20 +1,27 @@
+import { Manul } from "./Manul";
 import { Meerkat } from "./Meerkat";
 
-// ページの見出し。深い色の面に、明朝の大きな題と、金の細線の飾り。右上からミーアキャットがのぞく。
+// ページの見出し。深い色の面に、明朝の大きな題と、金の細線の飾り。右上からミーアキャットかマヌルネコがのぞく。
 export function PageTitle({
   title,
   label,
   tone,
+  mascot = "meerkat",
   children,
 }: {
   title: string;
   label: string; // 小さな英字ラベル
   tone: string; // 色面のクラス（例: "bg-accent text-white"）
+  mascot?: "meerkat" | "manul"; // 上からのぞく動物
   children?: React.ReactNode; // 右側に置くもの（月の切り替えなど）
 }) {
   return (
-    <div className="relative pt-7">
-      <Meerkat variant="peek" className="absolute right-5 top-0 z-0 h-[52px] w-auto" />
+    <div className="relative pt-10">
+      {mascot === "manul" ? (
+        <Manul variant="peek" className="absolute right-6 top-0 z-0 h-[58px] w-auto" />
+      ) : (
+        <Meerkat variant="peek" className="absolute right-6 top-0 z-0 h-[58px] w-auto" />
+      )}
       <div className={`relative z-10 overflow-hidden rounded-[24px] px-5 pb-5 pt-5 shadow-hard-lg ${tone}`}>
         {/* 飾り：金の同心円 */}
         <svg className="pointer-events-none absolute -left-10 -top-12 h-44 w-44 text-sun opacity-40" viewBox="0 0 100 100" aria-hidden="true">

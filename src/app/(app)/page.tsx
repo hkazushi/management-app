@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { WhoChip } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
+import { Manul } from "@/components/Manul";
 import { Meerkat } from "@/components/Meerkat";
 import { SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR } from "@/lib/colors";
@@ -64,6 +65,17 @@ export default async function HomePage() {
   const sum = monthSummary(lines, incomes, (aRes.data as unknown as IncomeActual[] | null) ?? [], goals, month);
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
   const me = members.find((m) => m.user_id === user?.id);
+  // 自分の名前で登録した分だけの「使えるお金」
+  const mySum = me
+    ? monthSummary(
+        lines.filter((l) => l.cost.member_id === me.user_id),
+        incomes.filter((i) => i.member_id === me.user_id),
+        (aRes.data as unknown as IncomeActual[] | null) ?? [],
+        goals.filter((g) => g.member_id === me.user_id),
+        month,
+      )
+    : null;
+  const hasMine = !!me && (incomes.some((i) => i.member_id === me.user_id) || lines.some((l) => l.cost.member_id === me.user_id));
 
   // 期限が7日以内、または過ぎているのに払っていないもの
   const urgent = lines.filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
@@ -94,15 +106,16 @@ export default async function HomePage() {
           ))}
         </svg>
         <span className="pointer-events-none absolute inset-[6px] rounded-[21px] border border-sun/40" aria-hidden="true" />
-        <Meerkat className="pointer-events-none absolute -bottom-3 right-4 h-[132px] w-auto" />
+        <Manul className="pointer-events-none absolute -bottom-2 right-[4.6rem] h-[84px] w-auto" />
+        <Meerkat className="pointer-events-none absolute -bottom-3 right-3 h-[128px] w-auto" />
 
-        <div className="relative pr-24">
+        <div className="relative pr-36">
           <span className="sticker text-sun">Today</span>
           <p className="display mt-2 text-[36px] leading-none">{fmtDayLong(today)}</p>
           <p className="mt-2 text-sm text-[#FAF4E4]/80">{me ? `${me.name}さん、おつかれさまです。` : "おつかれさまです。"}</p>
         </div>
 
-        <div className="relative mt-5 space-y-2 pr-24">
+        <div className="relative mt-5 space-y-2 pr-36">
           {todays.length === 0 ? (
             <p className="rounded-2xl bg-[#FAF4E4]/10 px-3.5 py-3 text-sm text-[#FAF4E4]/90">今日の予定はありません。</p>
           ) : (
@@ -177,9 +190,15 @@ export default async function HomePage() {
       {hasMoney && (
         <Link href="/money" className="block overflow-hidden rounded-[22px] border border-line shadow-hard">
           <div className={`px-5 py-4 ${sum.free < 0 ? "bg-danger text-white" : "bg-accent text-[#FAF4E4]"}`}>
-            <p className="text-xs font-bold opacity-80">今月、自由に使えるお金</p>
+            <p className="text-xs font-bold opacity-80">今月、ふたり合わせて自由に使えるお金</p>
             <p className="display mt-1 text-[36px] leading-none text-sun">{yen(sum.free)}</p>
           </div>
+          {hasMine && mySum && me && (
+            <p className="flex items-center justify-between border-t border-line bg-surface px-5 py-2.5 text-xs font-bold text-ink">
+              <span>うち {me.name}さんの分</span>
+              <span className="display text-lg">{yen(mySum.free)}</span>
+            </p>
+          )}
           <p className="flex items-center justify-between border-t border-line bg-surface px-4 py-2 text-xs font-bold text-ink">
             <span>
               {unpaid.length > 0 ? `固定費 のこり${unpaid.length}件（${yen(sum.unpaid)}）` : lines.length > 0 ? "今月の固定費はぜんぶ支払い済み" : "固定費は未登録"}

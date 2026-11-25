@@ -150,9 +150,10 @@ create policy "members all" on income_actuals  for all using (is_member()) with 
 create policy "members all" on savings_goals   for all using (is_member()) with check (is_member());
 create policy "members all" on savings_entries for all using (is_member()) with check (is_member());
 
--- いまある2つのアカウント（PIN ごと）を登録する。名前はあとで設定画面から変えられる
+-- いまある2つのアカウントを登録する。先に作ったほう（APP_PIN）が「ず」、あとのほう（APP_PIN_2）が「お」。
+-- 名前と色は、あとで設定画面から本人が変えられる
 insert into members (user_id, name, color, sort)
-select id, case row_number() over (order by created_at) when 1 then '1人目' else '2人目' end,
+select id, case row_number() over (order by created_at) when 1 then 'ず' else 'お' end,
        case row_number() over (order by created_at) when 1 then '#14463A' else '#9B2C3A' end,
        row_number() over (order by created_at)
 from auth.users;

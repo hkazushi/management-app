@@ -58,7 +58,7 @@
 - 見出しと金額は `.display`（明朝＋欧文セリフ）。深い色の面に置く文字は生成り（`text-[#FAF4E4]`）、強調は金（`text-sun`）。
 - 色を足すときは `globals.css` の変数 → `tailwind.config.ts` の順にそろえる。予定に付けられる色は `src/lib/colors.ts`。
 - 入力欄の文字は 16px 以上（それ未満だと iPhone が入力時に画面を拡大する）。
-- ミーアキャットは `src/components/Meerkat.tsx`（`stand` と `peek`）。絵を足すときも同じ色を使う。
+- 案内役の絵は `src/components/Meerkat.tsx`（`stand` / `peek`）と `src/components/Manul.tsx`（`sit` / `peek`）。手書きの SVG。
 
 ### 仕様変更は spec.md にも反映する
 
@@ -86,3 +86,5 @@
   どちらも `.next` に書くため。ビルドしたら開発サーバーを止めて `.next` を消し、起動し直す。
 - **`tailwind.config.ts` を変えても、起動中の開発サーバーに反映されないことがある**（2026-11）。
   影や色が古いまま見えたら、開発サーバーを止めて `.next` を消し、起動し直す。
+- **PIN の数字を、仕様書・SQL のコメント・コミットメッセージに書かない**（2026-11）。
+  リポジトリは GitHub に上がる。PIN は環境変数にだけ置き、文書では `APP_PIN` / `APP_PIN_2` と変数名で呼ぶ。

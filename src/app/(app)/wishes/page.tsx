@@ -23,10 +23,8 @@ const TONES = ["bg-pink/60", "bg-mint/60", "bg-sky/60", "bg-lilac/60", "bg-sun/2
 function WishFields({ members, wish, compact = false }: { members: Member[]; wish?: Wish; compact?: boolean }) {
   const more = (
     <>
-      <div className="grid grid-cols-2 gap-2">
-        <input name="price" defaultValue={wish?.price ?? ""} placeholder="だいたいの値段" inputMode="numeric" className="input" />
-        <WhoSelect members={members} defaultValue={wish?.member_id} />
-      </div>
+      <input name="price" defaultValue={wish?.price ?? ""} placeholder="だいたいの値段" inputMode="numeric" className="input" />
+      <WhoSelect members={members} defaultValue={wish?.member_id} />
       <input name="memo" defaultValue={wish?.memo ?? ""} placeholder="メモ（色・サイズなど）" className="input" />
     </>
   );
@@ -63,7 +61,7 @@ export default async function WishesPage() {
 
   return (
     <section className="space-y-5">
-      <PageTitle title="欲しいもの" label="WISH LIST" tone="bg-wine text-[#FAF4E4]">
+      <PageTitle title="欲しいもの" label="WISH LIST" tone="bg-wine text-[#FAF4E4]" mascot="manul">
         {total > 0 && (
           <p className="shrink-0 text-right text-[11px] font-bold leading-tight text-[#FAF4E4]/80">
             ぜんぶで

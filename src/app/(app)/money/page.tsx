@@ -20,8 +20,9 @@ const STATUS_TONE = {
 } as const;
 
 // お金：その月の「使えるお金」、固定費の支払い、収入、貯金。
-export default async function MoneyPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
-  const { m } = await searchParams;
+// ?who= で、全部／ふたりの分（shared）／それぞれの分 に切り替える。
+export default async function MoneyPage({ searchParams }: { searchParams: Promise<{ m?: string; who?: string }> }) {
+  const { m, who: whoParam } = await searchParams;
   const today = todayJST();
   const thisMonth = today.slice(0, 7);
   const month = isMonth(m) ? m : thisMonth;
@@ -36,19 +37,41 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
     supabase.from("savings_goals").select("id,name,target,monthly,member_id,active").eq("active", true).order("created_at", { ascending: true }),
     supabase.from("savings_entries").select("id,goal_id,amount,date,memo").order("created_at", { ascending: false }).limit(2000),
   ]);
-  const costs = (cRes.data as unknown as FixedCost[] | null) ?? [];
+  // 誰の分を見るか。"" は全部、"shared" は「ふたり」として登録した分、それ以外はその人の分
+  const who = whoParam === "shared" || members.some((x) => x.user_id === whoParam) ? (whoParam as string) : "";
+  const mine = <T extends { member_id: string | null }>(rows: T[]): T[] =>
+    who === "" ? rows : rows.filter((r) => (who === "shared" ? r.member_id === null : r.member_id === who));
+  const allCosts = (cRes.data as unknown as FixedCost[] | null) ?? [];
+  const allIncomes = (iRes.data as unknown as Income[] | null) ?? [];
+  const allGoals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
+  const costs = mine(allCosts);
   const payments = (pRes.data as unknown as FixedPayment[] | null) ?? [];
-  const incomes = (iRes.data as unknown as Income[] | null) ?? [];
+  const incomes = mine(allIncomes);
   const actuals = (aRes.data as unknown as IncomeActual[] | null) ?? [];
-  const goals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
+  const goals = mine(allGoals);
   const entries = (eRes.data as unknown as SavingsEntry[] | null) ?? [];
+  const person = members.find((x) => x.user_id === who);
+  const scopeName = who === "" ? "" : who === "shared" ? "ふたりの" : `${person?.name ?? ""}さんの`;
+  // 月や人を変えても、もう一方の選択を保つ
+  const href = (next: { m?: string; who?: string }) => {
+    const mm = next.m ?? (month === thisMonth ? "" : month);
+    const ww = next.who ?? who;
+    const q = [mm ? `m=${mm}` : "", ww ? `who=${ww}` : ""].filter(Boolean).join("&");
+    return q ? `/money?${q}` : "/money";
+  };
+  const scopes = [
+    { value: "", label: "ぜんぶ", color: null as string | null },
+    { value: "shared", label: "ふたり", color: "#C9A862" },
+    ...members.map((x) => ({ value: x.user_id, label: x.name, color: x.color as string | null })),
+  ];
 
   const lines = fixedLines(costs, payments, month, today);
   const sum = monthSummary(lines, incomes, actuals, goals, month);
   const totals = savingsTotals(entries, month);
   const actualOf = new Map(actuals.map((a) => [a.income_id, a.amount]));
   const paidCount = lines.filter((l) => l.payment).length;
-  const empty = costs.length === 0 && incomes.length === 0 && goals.length === 0;
+  const empty = allCosts.length === 0 && allIncomes.length === 0 && allGoals.length === 0;
+  const settingsHref = person ? `/money/settings?who=${person.user_id}` : "/money/settings";
 
   const navBtn =
     "flex h-9 w-9 items-center justify-center rounded-full border border-sun/50 bg-[#FAF4E4]/10 text-[#FAF4E4] active:scale-95";
@@ -57,15 +80,15 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
     <section className="space-y-5">
       <PageTitle title={fmtMonth(month)} label="MONEY" tone="bg-primary text-[#FAF4E4]">
         <div className="flex shrink-0 items-center gap-1.5">
-          <Link href={`/money?m=${shiftMonth(month, -1)}`} aria-label="前の月" className={navBtn}>
+          <Link href={href({ m: shiftMonth(month, -1) })} aria-label="前の月" className={navBtn}>
             <Icon name="left" size={18} />
           </Link>
           {month !== thisMonth && (
-            <Link href="/money" className={`${navBtn} !w-auto px-3 text-xs font-bold`}>
+            <Link href={who ? `/money?who=${who}` : "/money"} className={`${navBtn} !w-auto px-3 text-xs font-bold`}>
               今月
             </Link>
           )}
-          <Link href={`/money?m=${shiftMonth(month, 1)}`} aria-label="次の月" className={navBtn}>
+          <Link href={href({ m: shiftMonth(month, 1) })} aria-label="次の月" className={navBtn}>
             <Icon name="right" size={18} />
           </Link>
         </div>
@@ -77,12 +100,32 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
         </p>
       )}
 
+      {/* 誰の分を見るか */}
+      {!empty && (
+        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="誰のお金を見るか">
+          {scopes.map((sc) => (
+            <Link
+              key={sc.value}
+              href={href({ who: sc.value })}
+              role="tab"
+              aria-selected={who === sc.value}
+              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
+                who === sc.value ? "border-primary bg-primary text-[#FAF4E4]" : "border-line bg-surface text-muted"
+              }`}
+            >
+              {sc.color && <span className="h-2.5 w-2.5 rounded-full" style={{ background: sc.color }} />}
+              {sc.label}
+            </Link>
+          ))}
+        </div>
+      )}
+
       {empty && !cRes.error ? (
         <div className="card flex flex-col items-center space-y-3 p-6 text-center">
           <Meerkat className="h-28 w-auto" />
           <p className="display text-xl">まずは設定から</p>
           <p className="text-sm leading-relaxed text-muted">毎月の収入・固定費・貯金の目標を登録すると、ここに「使えるお金」と支払いの予定が出ます。</p>
-          <Link href="/money/settings" className="btn-primary">
+          <Link href={settingsHref} className="btn-primary">
             <Icon name="settings" size={16} />
             お金の設定をひらく
           </Link>
@@ -92,7 +135,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
           {/* 使えるお金 */}
           <div className="card overflow-hidden">
             <div className={`px-5 py-5 ${sum.free < 0 ? "bg-danger text-white" : "bg-accent text-[#FAF4E4]"}`}>
-              <p className="text-xs font-bold opacity-80">この月に自由に使えるお金</p>
+              <p className="text-xs font-bold opacity-80">{scopeName}この月に自由に使えるお金</p>
               <p className={`display mt-1.5 text-[44px] leading-none ${sum.free < 0 ? "" : "text-sun"}`}>{yen(sum.free)}</p>
             </div>
             <dl className="grid grid-cols-3 divide-x divide-line border-t border-line text-center">
@@ -291,9 +334,9 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
             )}
           </div>
 
-          <Link href="/money/settings" className="btn-ghost w-full">
+          <Link href={settingsHref} className="btn-ghost w-full">
             <Icon name="settings" size={16} />
-            収入・固定費・貯金の設定
+            {person ? `${person.name}さんの収入・固定費・貯金を追加・変更` : "収入・固定費・貯金を追加・変更"}
           </Link>
         </>
       )}

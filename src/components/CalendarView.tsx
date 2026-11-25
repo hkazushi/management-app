@@ -6,8 +6,9 @@ import { addEvents, deleteBatch, deleteEvent, updateEvent, type EventInput } fro
 import { DEFAULT_COLOR, PALETTE, onColor } from "@/lib/colors";
 import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, weekdayOf, yen } from "@/lib/format";
 import { whoOf } from "@/lib/members";
+import { WhoSelect } from "./Fields";
 import { Icon } from "./Icon";
-import { Meerkat } from "./Meerkat";
+import { Manul } from "./Manul";
 import type { EventPreset, EventRow, Member } from "@/types/database";
 
 export type DueMark = { date: string; name: string; amount: number; paid: boolean };
@@ -41,17 +42,8 @@ function DetailFields({ members, event, idPrefix }: { members: Member[]; event?:
           <input name="end_time" type="time" defaultValue={event?.end_time?.slice(0, 5) ?? ""} className="input mt-0.5" />
         </label>
       </div>
-      <div className="grid grid-cols-[7rem_1fr] gap-2">
-        <select name="member_id" defaultValue={event?.member_id ?? ""} aria-label="誰の" className="input">
-          <option value="">ふたり</option>
-          {members.map((m) => (
-            <option key={m.user_id} value={m.user_id}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-        <input name="memo" defaultValue={event?.memo ?? ""} placeholder="メモ（場所など）" className="input" />
-      </div>
+      <WhoSelect members={members} defaultValue={event?.member_id} />
+      <input name="memo" defaultValue={event?.memo ?? ""} placeholder="メモ（場所など）" className="input" />
       <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="色">
         {PALETTE.map((c) => (
           <label key={c.value} className="cursor-pointer">
@@ -338,7 +330,7 @@ export function CalendarView({
       )}
       {single && dayEvents.length === 0 && dayDues.length === 0 && (
         <div className="flex items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-4 py-3">
-          <Meerkat variant="peek" className="h-9 w-auto" />
+          <Manul variant="peek" className="h-9 w-auto" />
           <p className="text-sm text-muted">この日の予定はまだありません</p>
         </div>
       )}
