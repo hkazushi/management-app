@@ -32,7 +32,7 @@ export function PageTitle({
         <span className="pointer-events-none absolute inset-[5px] rounded-[20px] border border-sun/40" aria-hidden="true" />
         <span className="sticker relative opacity-80">{label}</span>
         <div className="relative mt-2 flex items-end justify-between gap-3">
-          <h1 className="display text-[30px] leading-tight">{title}</h1>
+          <h1 className="display min-w-0 text-[26px] leading-tight sm:text-[30px]">{title}</h1>
           {children}
         </div>
       </div>
@@ -43,12 +43,12 @@ export function PageTitle({
 // セクションの小見出し（金のひし形と細い線）
 export function SectionTitle({ children, right }: { children: React.ReactNode; tone?: string; right?: React.ReactNode }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
       <h2 className="display flex shrink-0 items-center gap-2 text-[18px] text-ink">
         <span className="h-2 w-2 shrink-0 rotate-45 bg-sun" aria-hidden="true" />
         {children}
       </h2>
-      <span className="h-px flex-1 bg-line" aria-hidden="true" />
+      <span className="h-px min-w-6 flex-1 bg-line" aria-hidden="true" />
       {right}
     </div>
   );

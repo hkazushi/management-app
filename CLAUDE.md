@@ -32,7 +32,7 @@
 ### 共有するものと、個人のものがある（RLS が2種類）
 
 - **予定・欲しいもの**（`events` / `event_presets` / `wishes`）は2人で共有。ポリシーは `is_member()`（`members` に登録された人なら全部読み書きできる）。
-- **お金**（`fixed_costs` / `fixed_payments` / `incomes` / `income_actuals` / `savings_goals` / `savings_entries`）は個人ごと。
+- **お金**（`fixed_costs` / `fixed_payments` / `incomes` / `income_actuals` / `savings_goals` / `savings_entries` / `one_offs`）は個人ごと。
   ポリシーは `user_id = auth.uid()`。相手の行は返ってこない。
 
 新しいテーブルを足すときは、どちらなのかを先に決める。お金に関するものを `is_member()` にすると相手に見えてしまう。
@@ -48,6 +48,8 @@
 |---|---|
 | `0001`〜`0007` | 以前のアプリ（案件管理・議事録・ログパス）のテーブル。今は使っていない |
 | `0008_home.sql` | ふたり手帖のテーブル全部と `is_member()` |
+| `0009_one_offs.sql` | 単発のお金（`one_offs`）。本人の行だけ |
+| `0010_calendar_feed.sql` | カレンダーの外部公開（`calendar_feeds` と関数 `calendar_feed`） |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
@@ -94,3 +96,10 @@
   リポジトリは GitHub に上がる。PIN は環境変数にだけ置き、文書では `APP_PIN` / `APP_PIN_2` と変数名で呼ぶ。
 - **`onSubmit` だけで処理するフォームは、画面の準備（ハイドレーション）前に送信されると GET で送られ、入力内容が URL に載る**（2026-11）。
   サーバー処理を呼ぶフォームは `ActionForm`（React のフォームアクション）を使う。自前の `onSubmit` にするなら `method="post"` を付ける。
+- **`supabase.auth.signOut()` は、既定でその人の全端末をログアウトさせる**（2026-11）。
+  スマホで「ロック」を押すと PC 側も切れていた。押した端末だけにするには `signOut({ scope: "local" })`。
+- **`src/middleware.ts` の対象になっているパスは、未ログインだと /login へ飛ばされる**（2026-11）。
+  ホーム画面用のアイコン（`/apple-icon`）やマニフェストのように、ログイン前に端末が取りに来るものは matcher から外す。
+- **TimeTree には、外から予定を読み書きする公式の手段が無い**（2026-11 調べ）。
+  公式 API（Connect App）は 2023-12-22 に終了。このアプリ → TimeTree は、iCal で公開して iPhone のカレンダー経由で
+  TimeTree の「外部カレンダーの表示」に出す形にしている（`/api/ical/<token>.ics`）。TimeTree → このアプリは未対応。

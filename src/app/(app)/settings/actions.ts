@@ -51,3 +51,26 @@ export async function deletePreset(id: string) {
   await supabase.from("event_presets").delete().eq("id", id);
   revalidatePath("/", "layout");
 }
+
+// カレンダーを外に出す URL を作る／作り直す（作り直すと、前の URL は使えなくなる）
+export async function createFeed() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("calendar_feeds").delete().eq("user_id", user.id);
+  await supabase.from("calendar_feeds").insert({});
+  revalidatePath("/settings");
+}
+
+// 外に出すのをやめる（URL が使えなくなる）
+export async function deleteFeed() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("calendar_feeds").delete().eq("user_id", user.id);
+  revalidatePath("/settings");
+}

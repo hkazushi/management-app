@@ -15,7 +15,7 @@ export default function AppLayout({
 }) {
   return (
     <div className="min-h-dvh overflow-x-clip pb-28">
-      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2.5">
             <Meerkat variant="peek" className="h-8 w-auto" />
@@ -45,7 +45,7 @@ export default function AppLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-5">
+      <main className="mx-auto w-full max-w-3xl px-3.5 py-4 sm:px-4 sm:py-5">
         {children}
         <MascotScene />
       </main>
