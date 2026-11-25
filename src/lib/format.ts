@@ -73,3 +73,24 @@ export function fmtTimeRange(start: string | null, end: string | null): string {
 
 // マイナスは「−¥1,000」と、記号を前に出す
 export const yen = (n: number): string => `${n < 0 ? "−" : ""}¥${Math.abs(Math.round(n)).toLocaleString("ja-JP")}`;
+
+// くり返しの予定の日付を並べる。start から until まで（両端を含む）。多すぎないよう max 件で止める。
+// 毎月は同じ「日」。その日が無い月（31日など）は飛ばす。
+export type Repeat = "none" | "weekly" | "biweekly" | "monthly";
+export function repeatDates(start: string, repeat: Repeat, until: string, max = 62): string[] {
+  if (repeat === "none" || !isDate(until) || until < start) return [start];
+  const out: string[] = [];
+  if (repeat === "monthly") {
+    const day = start.slice(8);
+    for (let i = 0; out.length < max; i += 1) {
+      const month = shiftMonth(start.slice(0, 7), i);
+      const date = `${month}-${day}`;
+      if (date > until) break;
+      if (Number(day) <= daysInMonth(month)) out.push(date);
+    }
+    return out;
+  }
+  const step = repeat === "weekly" ? 7 : 14;
+  for (let d = start; d <= until && out.length < max; d = addDays(d, step)) out.push(d);
+  return out;
+}

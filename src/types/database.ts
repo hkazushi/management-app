@@ -34,6 +34,7 @@ export type Wish = {
   id: string;
   title: string;
   url: string | null;
+  image_url?: string | null; // リンク先の商品画像（0015 以降）
   price: number | null;
   memo: string | null;
   member_id: string | null;

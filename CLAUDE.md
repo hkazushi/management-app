@@ -54,6 +54,7 @@
 | `0012_external_author.sql` | `external_events` に、入れた人の名前と TimeTree 上の色を追加 |
 | `0013_timetree_links.sql` | TimeTree に書き込んだ予定との対応表（`timetree_links`）。サービスキーだけが使う |
 | `0014_external_delete.sql` | TimeTree の予定を消す依頼（`delete_requested_at`）と、くり返しの印（`recurring`） |
+| `0015_wish_image.sql` | 欲しいものの写真（`wishes.image_url`） |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
@@ -115,3 +116,5 @@
   アイコンを変えたあとは、ホーム画面のアイコンをいったん消して追加し直さないと古いままになる。
 - **`new URL(import.meta.url).pathname` は、日本語のパスが `%E3%82…` に化ける**（2026-11）。
   このリポジトリはフォルダ名が日本語なので、そのまま `fs` に渡すと ENOENT になる。`fileURLToPath(import.meta.url)` を使う。
+- **zsh では `$urls` のような変数を引数に渡しても、改行や空白で分かれず1個の引数になる**（2026-11。上の単語分割と同じ罠）。
+  複数の値をスクリプトに渡すときは、ファイルに書いてスクリプト側で読む。
