@@ -71,4 +71,5 @@ export function fmtTimeRange(start: string | null, end: string | null): string {
   return end ? `${fmtTime(start)}〜${fmtTime(end)}` : fmtTime(start);
 }
 
-export const yen = (n: number): string => `¥${Math.round(n).toLocaleString("ja-JP")}`;
+// マイナスは「−¥1,000」と、記号を前に出す
+export const yen = (n: number): string => `${n < 0 ? "−" : ""}¥${Math.abs(Math.round(n)).toLocaleString("ja-JP")}`;
