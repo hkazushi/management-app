@@ -171,7 +171,7 @@ export function CalendarView({
                 onClick={() => tap(date)}
                 aria-pressed={isSelected}
                 aria-label={fmtDayLong(date)}
-                className={`relative flex min-h-[76px] flex-col items-stretch gap-0.5 border-line/70 p-1 text-left transition ${
+                className={`relative flex min-h-[72px] flex-col items-stretch gap-0.5 border-line/70 p-[3px] text-left transition sm:min-h-[84px] sm:p-1.5 ${
                   wd < 6 ? "border-r" : ""
                 } ${i < cells.length - 7 ? "border-b" : ""} ${
                   isSelected ? "z-10 bg-sun/25 outline outline-2 -outline-offset-2 outline-sun" : inMonth ? "bg-surface" : "bg-bg/70"
@@ -207,7 +207,7 @@ export function CalendarView({
                 {list.slice(0, 2).map((e) => (
                   <span
                     key={e.id}
-                    className={`truncate rounded-[5px] px-1 text-[10px] font-bold leading-[15px] ${inMonth ? "" : "opacity-50"}`}
+                    className={`overflow-hidden whitespace-nowrap rounded-[4px] px-[3px] text-[10px] font-bold leading-[15px] sm:truncate sm:px-1 sm:text-[11px] ${inMonth ? "" : "opacity-50"}`}
                     style={{ background: colorOf(e), color: onColor(colorOf(e)) }}
                   >
                     {e.title}
@@ -222,7 +222,7 @@ export function CalendarView({
 
       {/* 選んだ日 */}
       <div className="flex items-center justify-between gap-2">
-        <h2 className="display text-[22px] text-ink">
+        <h2 className="display text-[20px] text-ink sm:text-[22px]">
           {multi ? (selected.length ? `${selected.length}日を選択中` : "日付をタップ") : single ? fmtDayLong(single) : ""}
         </h2>
         <button
@@ -344,8 +344,8 @@ export function CalendarView({
       {/* 追加 */}
       <div className="card space-y-4 p-4">
         <div className="flex items-center justify-between">
-          <h3 className="display text-base text-ink">{multi ? `選んだ${selected.length}日に予定を入れる` : "この日に予定を入れる"}</h3>
-          <Link href="/settings#presets" className="text-xs font-bold text-muted underline decoration-sun underline-offset-4">
+          <h3 className="display text-base text-ink">{multi ? `選んだ${selected.length}日に入れる` : "この日に入れる"}</h3>
+          <Link href="/settings#presets" className="shrink-0 text-xs font-bold text-muted underline decoration-sun underline-offset-4">
             よく使う予定を編集
           </Link>
         </div>

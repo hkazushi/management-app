@@ -1,5 +1,5 @@
 import { diffDays, dueDate } from "@/lib/format";
-import type { FixedCost, FixedPayment, Income, IncomeActual, SavingsEntry, SavingsGoal } from "@/types/database";
+import type { FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsEntry, SavingsGoal } from "@/types/database";
 
 export type FixedStatus = "paid" | "overdue" | "today" | "soon" | "later";
 
@@ -34,7 +34,24 @@ export function fixedLines(costs: FixedCost[], payments: FixedPayment[], month: 
     .sort((a, b) => a.due.localeCompare(b.due) || a.cost.name.localeCompare(b.cost.name, "ja"));
 }
 
-export function statusLabel(line: FixedLine): string {
+// 単発の出費1件の状態（固定費と同じ見せ方をする）
+export type OneOffLine = { item: OneOff; daysLeft: number; status: FixedStatus };
+
+export function oneOffLine(item: OneOff, today: string): OneOffLine {
+  const daysLeft = diffDays(item.date, today);
+  const status: FixedStatus = item.paid_at
+    ? "paid"
+    : daysLeft < 0
+      ? "overdue"
+      : daysLeft === 0
+        ? "today"
+        : daysLeft <= 7
+          ? "soon"
+          : "later";
+  return { item, daysLeft, status };
+}
+
+export function statusLabel(line: { status: FixedStatus; daysLeft: number }): string {
   switch (line.status) {
     case "paid":
       return "支払い済み";
@@ -50,9 +67,10 @@ export function statusLabel(line: FixedLine): string {
 export type MonthSummary = {
   income: number;
   fixed: number;
+  extra: number; // 単発の出費の合計
   savings: number; // 毎月ためる予定の合計
-  free: number; // 使えるお金 = 収入 − 固定費 − 貯金
-  unpaid: number; // まだ払っていない固定費の合計
+  free: number; // 使えるお金 = 収入 − 固定費 − 単発の出費 − 貯金
+  unpaid: number; // まだ払っていない固定費・単発の出費の合計
 };
 
 export function monthSummary(
@@ -61,13 +79,20 @@ export function monthSummary(
   actuals: IncomeActual[],
   goals: SavingsGoal[],
   month: string,
+  oneOffs: OneOff[] = [], // その月の単発（日付がその月のもの）
 ): MonthSummary {
+  const inMonth = oneOffs.filter((o) => o.date.startsWith(month));
+  const extraIncome = inMonth.filter((o) => o.kind === "income").reduce((n, o) => n + o.amount, 0);
+  const expenses = inMonth.filter((o) => o.kind === "expense");
+  const extra = expenses.reduce((n, o) => n + o.amount, 0);
   const actual = new Map(actuals.filter((a) => a.month === month).map((a) => [a.income_id, a.amount]));
-  const income = incomes.filter((i) => i.active).reduce((n, i) => n + (actual.get(i.id) ?? i.amount), 0);
+  const income = incomes.filter((i) => i.active).reduce((n, i) => n + (actual.get(i.id) ?? i.amount), 0) + extraIncome;
   const fixed = lines.reduce((n, l) => n + (l.payment?.amount ?? l.cost.amount), 0);
-  const unpaid = lines.filter((l) => !l.payment).reduce((n, l) => n + l.cost.amount, 0);
+  const unpaid =
+    lines.filter((l) => !l.payment).reduce((n, l) => n + l.cost.amount, 0) +
+    expenses.filter((o) => !o.paid_at).reduce((n, o) => n + o.amount, 0);
   const savings = goals.filter((g) => g.active).reduce((n, g) => n + g.monthly, 0);
-  return { income, fixed, savings, free: income - fixed - savings, unpaid };
+  return { income, fixed, extra, savings, free: income - fixed - extra - savings, unpaid };
 }
 
 // 目標ごとの「これまでの合計」と「その月に入れた額」

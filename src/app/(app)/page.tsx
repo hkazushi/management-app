@@ -8,9 +8,9 @@ import { SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR } from "@/lib/colors";
 import { addDays, diffDays, fmtDay, fmtDayLong, fmtTimeRange, todayJST, yen } from "@/lib/format";
 import { getMembers, whoOf } from "@/lib/members";
-import { fixedLines, monthSummary, statusLabel } from "@/lib/money";
-import { payFixed } from "./money/actions";
-import type { EventRow, FixedCost, FixedPayment, Income, IncomeActual, SavingsGoal, Wish } from "@/types/database";
+import { fixedLines, monthSummary, oneOffLine, statusLabel } from "@/lib/money";
+import { payFixed, setOneOffPaid } from "./money/actions";
+import type { EventRow, FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsGoal, Wish } from "@/types/database";
 
 // ホーム：今日からの予定、近い支払い、今月使えるお金、欲しいもの。お金まわりは自分の分だけが出る。
 export default async function HomePage() {
@@ -31,6 +31,7 @@ export default async function HomePage() {
     aRes,
     gRes,
     wRes,
+    oRes,
   ] = await Promise.all([
     getMembers(supabase),
     supabase.auth.getUser(),
@@ -51,6 +52,13 @@ export default async function HomePage() {
       .eq("done", false)
       .order("created_at", { ascending: false })
       .limit(3),
+    // 単発：今月ぶん全部と、過去の払い残し。7日先まで
+    supabase
+      .from("one_offs")
+      .select("id,kind,name,amount,date,paid_at,memo")
+      .lte("date", addDays(`${month}-01`, 45))
+      .or(`date.gte.${month}-01,paid_at.is.null`)
+      .order("date", { ascending: true }),
   ]);
 
   const events = (eRes.data as unknown as EventRow[] | null) ?? [];
@@ -62,14 +70,19 @@ export default async function HomePage() {
   );
   const incomes = (iRes.data as unknown as Income[] | null) ?? [];
   const goals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
-  const sum = monthSummary(lines, incomes, (aRes.data as unknown as IncomeActual[] | null) ?? [], goals, month);
+  const oneOffs = (oRes.data as unknown as OneOff[] | null) ?? [];
+  const sum = monthSummary(lines, incomes, (aRes.data as unknown as IncomeActual[] | null) ?? [], goals, month, oneOffs);
+  // 単発の出費のうち、未払いで、期限が7日以内か過ぎているもの
+  const urgentOneOffs = oneOffs
+    .filter((o) => o.kind === "expense")
+    .map((o) => oneOffLine(o, today))
+    .filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
   const me = members.find((m) => m.user_id === user?.id);
 
   // 期限が7日以内、または過ぎているのに払っていないもの
   const urgent = lines.filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
-  const unpaid = lines.filter((l) => !l.payment);
-  const hasMoney = lines.length > 0 || incomes.length > 0 || goals.length > 0;
+  const hasMoney = lines.length > 0 || incomes.length > 0 || goals.length > 0 || oneOffs.length > 0;
 
   const byDate = new Map<string, EventRow[]>();
   for (const e of events) byDate.set(e.date, [...(byDate.get(e.date) ?? []), e]);
@@ -77,8 +90,8 @@ export default async function HomePage() {
   const todays = byDate.get(today) ?? [];
   const later = [...byDate.entries()].filter(([d]) => d !== today);
   // 2匹のふきだし。急ぐものから順に
-  const overdue = lines.filter((l) => l.status === "overdue").length;
-  const dueToday = lines.filter((l) => l.status === "today").length;
+  const overdue = [...lines, ...urgentOneOffs].filter((l) => l.status === "overdue").length;
+  const dueToday = [...lines, ...urgentOneOffs].filter((l) => l.status === "today").length;
   const say =
     overdue > 0
       ? `支払いが${overdue}件すぎています`
@@ -86,8 +99,8 @@ export default async function HomePage() {
         ? `今日までの支払いが${dueToday}件あります`
         : todays.length > 0
           ? `今日の予定は${todays.length}件です`
-          : urgent.length > 0
-            ? `もうすぐ支払いが${urgent.length}件あります`
+          : urgent.length + urgentOneOffs.length > 0
+            ? `もうすぐ支払いが${urgent.length + urgentOneOffs.length}件あります`
             : "今日はのんびりできそうです";
   const colorOf = (e: EventRow) => e.color ?? (e.member_id ? whoOf(members, e.member_id).color : DEFAULT_COLOR);
   const dayWord = (d: string) => (diffDays(d, today) === 1 ? "あした" : fmtDay(d));
@@ -108,20 +121,20 @@ export default async function HomePage() {
           ))}
         </svg>
         <span className="pointer-events-none absolute inset-[6px] rounded-[21px] border border-sun/40" aria-hidden="true" />
-        <Manul className="mascot-breathe pointer-events-none absolute -bottom-2 right-[5.4rem] h-[100px] w-auto" />
-        <Meerkat className="mascot-breathe pointer-events-none absolute -bottom-3 right-2 h-[156px] w-auto [animation-delay:0.7s]" />
+        <Manul className="mascot-breathe pointer-events-none absolute -bottom-2 right-[4.3rem] h-[72px] w-auto sm:right-[5.4rem] sm:h-[100px]" />
+        <Meerkat className="mascot-breathe pointer-events-none absolute -bottom-3 right-1 h-[118px] w-auto [animation-delay:0.7s] sm:right-2 sm:h-[156px]" />
         {/* 2匹からの一言（今日の状況で変わる） */}
-        <p className="pop-in absolute right-[5.5rem] top-4 max-w-[11.5rem] rounded-2xl rounded-br-sm border border-sun/70 bg-[#FAF4E4] px-3 py-1.5 text-[11px] font-bold leading-snug text-ink [animation-delay:0.6s]">
+        <p className="pop-in absolute right-4 top-4 max-w-[13rem] rounded-2xl rounded-br-sm border border-sun/70 bg-[#FAF4E4] px-3 py-1.5 text-[11px] font-bold leading-snug text-ink [animation-delay:0.6s] sm:right-[5.5rem]">
           {say}
         </p>
 
-        <div className="relative pr-36 pt-12">
+        <div className="relative pr-[7.5rem] pt-12 sm:pr-36">
           <span className="sticker text-sun">Today</span>
-          <p className="display mt-2 text-[36px] leading-none">{fmtDayLong(today)}</p>
+          <p className="display mt-2 whitespace-nowrap text-[28px] leading-none sm:text-[36px]">{fmtDayLong(today)}</p>
           <p className="mt-2 text-sm text-[#FAF4E4]/80">{me ? `${me.name}さん、おつかれさまです。` : "おつかれさまです。"}</p>
         </div>
 
-        <div className="relative mt-5 space-y-2 pr-44">
+        <div className="relative mt-5 space-y-2 pr-[7.5rem] sm:pr-44">
           {todays.length === 0 ? (
             <p className="rounded-2xl bg-[#FAF4E4]/10 px-3.5 py-3 text-sm text-[#FAF4E4]/90">今日の予定はありません。</p>
           ) : (
@@ -152,7 +165,7 @@ export default async function HomePage() {
           <Link
             key={a.href}
             href={a.href}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface px-2 py-3.5 text-xs font-bold text-ink shadow-hard-sm transition active:scale-95"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface px-1 py-3.5 text-[11px] font-bold text-ink shadow-hard-sm transition active:scale-95 sm:text-xs"
           >
             <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sun">
               <Icon name={a.icon} size={19} />
@@ -163,7 +176,7 @@ export default async function HomePage() {
       </div>
 
       {/* 支払い */}
-      {urgent.length > 0 && (
+      {urgent.length + urgentOneOffs.length > 0 && (
         <div className="space-y-3">
           <SectionTitle tone="bg-danger">そろそろ支払い</SectionTitle>
           <ul className="space-y-2">
@@ -188,6 +201,27 @@ export default async function HomePage() {
                 </form>
               </li>
             ))}
+            {urgentOneOffs.map((l) => (
+              <li
+                key={l.item.id}
+                className={`flex items-center gap-3 rounded-2xl border border-line px-3 py-2.5 shadow-hard-sm ${
+                  l.status === "overdue" ? "bg-danger text-white" : l.status === "today" ? "bg-sun/40" : "bg-surface"
+                }`}
+              >
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-[15px] font-bold">{l.item.name}</p>
+                  <p className={`text-xs font-bold ${l.status === "overdue" ? "text-white/90" : "text-muted"}`}>
+                    {fmtDay(l.item.date)}まで・{statusLabel(l)}
+                  </p>
+                </div>
+                <p className="display shrink-0 text-base">{yen(l.item.amount)}</p>
+                <form action={setOneOffPaid.bind(null, l.item.id, true)}>
+                  <button type="submit" className="btn-ghost !px-3 !py-1.5 !text-xs">
+                    払った
+                  </button>
+                </form>
+              </li>
+            ))}
           </ul>
         </div>
       )}
@@ -201,7 +235,7 @@ export default async function HomePage() {
           </div>
           <p className="flex items-center justify-between border-t border-line bg-surface px-4 py-2 text-xs font-bold text-ink">
             <span>
-              {unpaid.length > 0 ? `固定費 のこり${unpaid.length}件（${yen(sum.unpaid)}）` : lines.length > 0 ? "今月の固定費はぜんぶ支払い済み" : "固定費は未登録"}
+              {sum.unpaid > 0 ? `今月の支払い のこり ${yen(sum.unpaid)}` : lines.length > 0 ? "今月の支払いはぜんぶ済み" : "固定費は未登録"}
             </span>
             <Icon name="right" size={15} />
           </p>
@@ -226,7 +260,7 @@ export default async function HomePage() {
           <ul className="space-y-2">
             {later.map(([date, list]) => (
               <li key={date} className="flex gap-3">
-                <p className="display w-[4.2rem] shrink-0 pt-2 text-[13px] leading-tight text-ink">{dayWord(date)}</p>
+                <p className="display w-[4.4rem] shrink-0 pt-1.5 text-[15px] leading-tight text-ink">{dayWord(date)}</p>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   {list.map((e) => (
                     <div key={e.id} className="flex items-stretch overflow-hidden rounded-xl border border-line bg-surface">

@@ -88,3 +88,14 @@ export type SavingsEntry = {
   date: string;
   memo: string | null;
 };
+
+// 単発のお金（その月だけの出費・収入）
+export type OneOff = {
+  id: string;
+  kind: "expense" | "income";
+  name: string;
+  amount: number;
+  date: string; // 出費なら期限、収入なら入る日
+  paid_at: string | null;
+  memo: string | null;
+};

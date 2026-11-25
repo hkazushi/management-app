@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { isMonth, todayJST } from "@/lib/format";
+import { isDate, isMonth, todayJST } from "@/lib/format";
 
 const num = (v: FormDataEntryValue | null) => {
   const s = String(v ?? "").replace(/[^\d-]/g, "");
@@ -165,5 +165,35 @@ export async function addSavingAmount(goalId: string, amount: number) {
 export async function deleteSaving(id: string) {
   const supabase = await createClient();
   await supabase.from("savings_entries").delete().eq("id", id);
+  done();
+}
+
+// ---------- 単発（その月だけの出費・収入） ----------
+
+export async function addOneOff(formData: FormData) {
+  const name = text(formData.get("name"));
+  const amount = num(formData.get("amount"));
+  const date = text(formData.get("date"));
+  if (!name || !amount || !isDate(date)) return;
+  const supabase = await createClient();
+  await supabase.from("one_offs").insert({
+    kind: text(formData.get("kind")) === "income" ? "income" : "expense",
+    name,
+    amount: Math.abs(amount),
+    date,
+    memo: text(formData.get("memo")) || null,
+  });
+  done();
+}
+
+export async function setOneOffPaid(id: string, paid: boolean) {
+  const supabase = await createClient();
+  await supabase.from("one_offs").update({ paid_at: paid ? new Date().toISOString() : null }).eq("id", id);
+  done();
+}
+
+export async function deleteOneOff(id: string) {
+  const supabase = await createClient();
+  await supabase.from("one_offs").delete().eq("id", id);
   done();
 }

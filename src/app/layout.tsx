@@ -27,11 +27,14 @@ const latin = Cormorant_Garamond({
 export const metadata: Metadata = {
   title: "ふたり手帖",
   description: "2人で使う、予定・欲しいもの・お金の手帖",
+  // iPhone の「ホーム画面に追加」で、アドレスバーの無いアプリのように開く
+  appleWebApp: { capable: true, title: "ふたり手帖", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
   themeColor: "#F6F1E7",
 };
 
