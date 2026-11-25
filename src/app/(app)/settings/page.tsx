@@ -6,7 +6,9 @@ import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR, onColor } from "@/lib/colors";
 import { fmtTimeRange } from "@/lib/format";
 import { getMembers, whoOf } from "@/lib/members";
-import { addPreset, deletePreset, updateMe } from "./actions";
+import { headers } from "next/headers";
+import { CopyField } from "@/components/CopyField";
+import { addPreset, createFeed, deleteFeed, deletePreset, updateMe } from "./actions";
 import type { EventPreset } from "@/types/database";
 
 // 設定：自分の名前と色、よく使う予定
@@ -18,14 +20,22 @@ export default async function SettingsPage() {
     {
       data: { user },
     },
+    fRes,
+    hdrs,
   ] = await Promise.all([
     getMembers(supabase),
     supabase.from("event_presets").select("id,title,start_time,end_time,member_id,color,sort").order("sort", { ascending: true }),
     supabase.auth.getUser(),
+    supabase.from("calendar_feeds").select("token").maybeSingle(),
+    headers(),
   ]);
   const presets = (pRes.data as unknown as EventPreset[] | null) ?? [];
   const me = members.find((m) => m.user_id === user?.id);
   const other = members.find((m) => m.user_id !== user?.id);
+  // 外に出す URL（自分の分。RLS で自分の行しか返らない）
+  const token = (fRes.data as unknown as { token: string } | null)?.token ?? null;
+  const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "";
+  const feedPath = token ? `${host}/api/ical/${token}.ics` : "";
 
   return (
     <section className="stagger space-y-6">
@@ -106,6 +116,54 @@ export default async function SettingsPage() {
             よく使う予定に追加
           </button>
         </ActionForm>
+      </div>
+
+      <div id="feed" className="scroll-mt-20 space-y-3">
+        <SectionTitle>ほかのカレンダーに出す</SectionTitle>
+        <p className="text-xs leading-relaxed text-muted">
+          このアプリの予定を、iPhone のカレンダーや TimeTree でも見られるようにします（見るだけ。お金は出ません）。
+          URL を知っている人は予定を読めるので、人に教えないでください。
+        </p>
+        {fRes.error ? (
+          <p className="rounded-2xl border border-dashed border-line px-3 py-3 text-sm text-muted">
+            使うには、Supabase の SQL Editor で supabase/migrations/0009_one_offs_and_feed.sql を実行してください。
+          </p>
+        ) : token ? (
+          <div className="card space-y-3 p-4">
+            <a href={`webcal://${feedPath}`} className="btn-primary w-full">
+              <Icon name="calendar" size={16} />
+              iPhone のカレンダーに追加
+            </a>
+            <CopyField value={`https://${feedPath}`} label="カレンダーのURL" />
+            <ol className="list-decimal space-y-1 pl-5 text-xs leading-relaxed text-muted">
+              <li>上のボタンを iPhone で押し、「照会」を選ぶ（iPhone のカレンダーに「ふたり手帖」が増えます）</li>
+              <li>TimeTree を開き、設定の「外部カレンダーの表示」をオンにして「ふたり手帖」を選ぶ</li>
+              <li>Google カレンダーなら、「URL で追加」に上の URL を貼る</li>
+            </ol>
+            <p className="text-xs leading-relaxed text-muted">
+              反映には数時間かかることがあります。TimeTree では自分の端末にだけ表示され、TimeTree の共有相手には出ません。
+            </p>
+            <div className="flex items-center justify-center gap-5 text-xs font-bold">
+              <ActionForm action={createFeed} confirmText="URL を作り直しますか？ 前の URL は使えなくなり、登録し直しが必要です。">
+                <button type="submit" className="text-muted">
+                  URL を作り直す
+                </button>
+              </ActionForm>
+              <ActionForm action={deleteFeed} confirmText="外に出すのをやめますか？ URL が使えなくなります。">
+                <button type="submit" className="text-danger">
+                  出すのをやめる
+                </button>
+              </ActionForm>
+            </div>
+          </div>
+        ) : (
+          <ActionForm action={createFeed} cheer="URL を作りました">
+            <button type="submit" className="btn-ghost w-full">
+              <Icon name="link" size={16} />
+              外に出すための URL を作る
+            </button>
+          </ActionForm>
+        )}
       </div>
     </section>
   );
