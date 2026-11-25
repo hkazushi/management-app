@@ -52,6 +52,7 @@
 | `0010_calendar_feed.sql` | カレンダーの外部公開（`calendar_feeds` と関数 `calendar_feed`） |
 | `0011_external_events.sql` | TimeTree から読み取った予定（`external_events`）。画面からは読むだけ |
 | `0012_external_author.sql` | `external_events` に、入れた人の名前と TimeTree 上の色を追加 |
+| `0013_timetree_links.sql` | TimeTree に書き込んだ予定との対応表（`timetree_links`）。サービスキーだけが使う |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
