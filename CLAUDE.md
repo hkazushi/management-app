@@ -1,17 +1,17 @@
-# 議事録アプリ
+# ふたり手帖
 
-打ち合わせを録音すると、文字起こし・要約・決定事項・宿題の抽出まで行う個人用アプリ。
-2026-11-11 に案件・タスク管理アプリから作り替えた（フォルダ名は旧名のまま）。
+2人で使う個人用アプリ（予定・欲しいもの・お金）。
+2026-11-25 に議事録アプリから作り替えた（フォルダ名は最初のアプリの名前のまま）。
 
 **仕様は [spec.md](spec.md)、セットアップは [README.md](README.md) に詳しくある。**
 ここには実装時に気をつけることを書く。
 
 ## 技術構成
 
-- Next.js（App Router）+ TypeScript + Tailwind（ライト基調のミニマル）
+- Next.js（App Router）+ TypeScript + Tailwind
 - Supabase（PostgreSQL + Auth + **RLS**）
 - Vercel ホスティング（GitHub `hkazushi/management-app` の `main` で自動デプロイ）
-- AI は **OpenRouter** 経由。文字起こし `google/gemini-2.5-flash`、議事録の整理 `anthropic/claude-sonnet-4.6`
+- AI は使っていない
 
 ---
 
@@ -29,11 +29,15 @@
 
 ## 実装時の注意
 
-### AI のキーはサーバー側のみ。中身は OpenRouter のキー
+### 共有するものと、個人のものがある（RLS が2種類）
 
-`ANTHROPIC_API_KEY` という名前だが、入っているのは **OpenRouter のキー（`sk-or-`）**。
-AI の呼び出しは `src/lib/ai.ts` にまとめてあり、Route Handler（`src/app/api/`）からのみ使う。
-`NEXT_PUBLIC_` を付けない。クライアントコンポーネントから直接 AI を呼ばない。
+- **予定・欲しいもの**（`events` / `event_presets` / `wishes`）は2人で共有。ポリシーは `is_member()`（`members` に登録された人なら全部読み書きできる）。
+- **お金**（`fixed_costs` / `fixed_payments` / `incomes` / `income_actuals` / `savings_goals` / `savings_entries`）は個人ごと。
+  ポリシーは `user_id = auth.uid()`。相手の行は返ってこない。
+
+新しいテーブルを足すときは、どちらなのかを先に決める。お金に関するものを `is_member()` にすると相手に見えてしまう。
+画面のコードでは絞り込みを書いていない（DB が本人の行しか返さない）ので、サービスキーで読む処理を足すときは自分で絞る。
+「なぜかデータが0件で返る」「書き込めない」ときは、ログイン中のアカウントが `members` に入っているかを見る。
 
 ### マイグレーションは番号順に手動実行
 
@@ -42,38 +46,23 @@ AI の呼び出しは `src/lib/ai.ts` にまとめてあり、Route Handler（`s
 
 | ファイル | 内容 |
 |---|---|
-| `0001`〜`0003` | 旧アプリのテーブル・RLS・ビュー（`projects` は今も使う） |
-| `0004` / `0005` | 旧アプリの Google 連携・カレンダーメモ（未使用） |
-| `0006_meetings.sql` | 議事録アプリの `meetings` / `meeting_segments` / `action_items` |
-| `0007_vault.sql` | ログパス。`vaults`（鍵）と `project_resources` の拡張（`secret_enc` ほか） |
+| `0001`〜`0007` | 以前のアプリ（案件管理・議事録・ログパス）のテーブル。今は使っていない |
+| `0008_home.sql` | ふたり手帖のテーブル全部と `is_member()` |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
-### RLS が有効
+### 日付は文字列で扱う
 
-「なぜかデータが0件で返る」ときは、まず RLS ポリシーを疑う。認証済みセッションで実行されているかを確認する。
-API も未ログインだと行が取れず 404 を返す作りにしている。
+日付は `"YYYY-MM-DD"`、月は `"YYYY-MM"` の文字列のまま持ち回り、計算は `src/lib/format.ts` の関数で行う。
+`new Date("2026-11-25")` を端末の時刻として読むと、タイムゾーンで1日ずれる。「今日」は必ず `todayJST()`。
 
-### `claude/` のスクリプトは、直したら設置先へコピーする
+### デザインの決まり
 
-`claude/session-log.mjs`（作業ログの自動記録）、`claude/shukudai.mjs`（宿題コマンド）、`claude/logpass.mjs`（URL・ログイン情報の収集）は、
-アプリ本体ではなくこのPCで動く。実際に使われるのはコピー先なので、直したら必ずコピーする。
-
-```bash
-cp claude/session-log.mjs ~/.claude/hooks/session-log.mjs
-cp claude/shukudai.mjs ~/bin/shukudai
-cp claude/logpass.mjs ~/bin/logpass
-```
-
-ふだんの作業ログと宿題は、外部の AI を使わず、作業中の Claude が `shukudai record` などで書く（spec.md 7.1）。
-`session-log.mjs hook` は、記録が15分無いときに Claude へ催促するだけ。OpenRouter を呼ぶのは手動の `backfill` / `run` のみ。
-フックの確認は、フックの JSON（`session_id` / `transcript_path` / `cwd` / `hook_event_name`）を標準入力に渡して実行する。
-
-### パスワードは平文で DB に入れない・画面やログに出さない
-
-ログパスのパスワードは、必ず公開鍵で暗号化してから `project_resources.secret_enc` に入れる（`src/lib/vault.ts` / `claude/logpass.mjs`）。
-`url` `label` `account` `note` は平文なので、秘密の値を入れない（Webhook の URL は秘密として扱う）。
-`logpass` の動作確認は `logpass scan --dry --verbose`（値は出ず、有無だけ出る）。メモの中身を `cat` や `head` で直接出さない。
+- 線は 1px の金がかった色（`border-line`）、影はごく薄く（`shadow-hard` 系。名前は以前の案の名残で、中身は薄い影）。太い黒枠・原色・絵文字は使わない。
+- 見出しと金額は `.display`（明朝＋欧文セリフ）。深い色の面に置く文字は生成り（`text-[#FAF4E4]`）、強調は金（`text-sun`）。
+- 色を足すときは `globals.css` の変数 → `tailwind.config.ts` の順にそろえる。予定に付けられる色は `src/lib/colors.ts`。
+- 入力欄の文字は 16px 以上（それ未満だと iPhone が入力時に画面を拡大する）。
+- 案内役の絵は `src/components/Meerkat.tsx`（`stand` / `peek`）と `src/components/Manul.tsx`（`sit` / `peek`）。手書きの SVG。
 
 ### 仕様変更は spec.md にも反映する
 
@@ -92,20 +81,16 @@ cp claude/logpass.mjs ~/bin/logpass
   `globals.css` のコンポーネントクラスでは、透明度つきの色は生の CSS で書く。JSX の className では使える。
 - **Vercel の環境変数は、変更後に再デプロイしないと反映されない**（2026-06）。
   環境変数が無い状態でデプロイすると middleware が落ちて全ページ 500 になる。
-- **Vercel のリクエスト本文は 4.5MB まで**（2026-11）。
-  録音は 16kHz モノラルの WAV を 60 秒ごとに区切って送っている（1断片 約1.9MB）。区切りを長くしたり音質を上げたりすると上限を超える。
 - **`npm run lint` は ESLint の設定ファイルが無いと対話プロンプトで止まる**（2026-11）。`.eslintrc.json` を消さない。
 - **zsh では未クォートの変数が単語分割されない**（2026-06）。
   `for f in $files` は1要素として回る。ファイル一括処理は `find -print0 | while read -d ''` を使う。`--include=*.tsx` もクォートが必要。
-- **日本語のパスは `fs.realpathSync` の結果と DB の文字列が一致しないことがある**（2026-11）。
-  macOS は「ダ」「プ」などを NFD（濁点が別の文字）で返す場合があり、見た目が同じでも `===` が false になる。
-  パスを比べる前に両方 `.normalize("NFC")` する。
-- **`projects.repo_path` は 2026-09 のフォルダ移動前のパス（`~/my-work/...`）のまま**（2026-11）。
-  ホーム直下のシンボリックリンクで今も有効。案件の照合は文字列ではなく実体のパス（realpath）で比べる。
-- **Claude Code のセッションは何か月も続き、会話ログは1本で 100MB を超える**（2026-11）。
-  「1セッション = 1件」で記録すると中身がほとんど拾えない。日付ごとに分ける。ファイルは丸ごと読まず1行ずつ読む。
-  作業フォルダ（cwd）がホームのセッションも多いので、案件は触ったファイルのパスから決める。
-- **会話を外部の AI で要約して宿題を作ると、終わった宿題が溜まって情報が古くなる**（2026-11）。
-  数分で済む手順まで宿題になり、完了を付けない方針と重なって5日で23件溜まった。記録は状況を知っている作業中の Claude に書かせる。
-- **セッションを分岐・再開すると、元の会話が新しい会話ログに写される**（2026-11）。
-  会話ログごとに記録すると同じ日の作業が何件も重複する。作業ログは「案件 × 日付」で1件にまとめる。
+- **画面やルートを消したあと `npx tsc --noEmit` が `.next/types/...` の「モジュールが見つからない」で落ちる**（2026-11）。
+  古いビルドの型が残っているだけ。`rm -rf .next` してからやり直す。
+- **開発サーバーの起動中に `npm run build` をすると、開発サーバーが 500 や 404 を返すようになる**（2026-11）。
+  どちらも `.next` に書くため。ビルドしたら開発サーバーを止めて `.next` を消し、起動し直す。
+- **`tailwind.config.ts` を変えても、起動中の開発サーバーに反映されないことがある**（2026-11）。
+  影や色が古いまま見えたら、開発サーバーを止めて `.next` を消し、起動し直す。
+- **PIN の数字を、仕様書・SQL のコメント・コミットメッセージに書かない**（2026-11）。
+  リポジトリは GitHub に上がる。PIN は環境変数にだけ置き、文書では `APP_PIN` / `APP_PIN_2` と変数名で呼ぶ。
+- **`onSubmit` だけで処理するフォームは、画面の準備（ハイドレーション）前に送信されると GET で送られ、入力内容が URL に載る**（2026-11）。
+  サーバー処理を呼ぶフォームは `ActionForm`（React のフォームアクション）を使う。自前の `onSubmit` にするなら `method="post"` を付ける。

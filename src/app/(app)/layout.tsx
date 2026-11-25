@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
 import { Icon } from "@/components/Icon";
+import { Cheer } from "@/components/Cheer";
+import { MascotScene } from "@/components/MascotScene";
+import { Meerkat } from "@/components/Meerkat";
 import { logout } from "./actions";
 
 // 認証済みエリアの共通シェル。未ログインの遮断は middleware が担うため、
@@ -11,32 +14,43 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh pb-24">
-      <header className="sticky top-0 z-20 border-b border-border bg-bg">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
-              <Icon name="mic" size={16} />
-            </span>
-            <span className="text-[15px] font-bold tracking-tight text-ink">
-              議事録
+    <div className="min-h-dvh overflow-x-clip pb-28">
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
+            <Meerkat variant="peek" className="h-8 w-auto" />
+            <span className="leading-none">
+              <span className="display block text-[18px] text-ink">ふたり手帖</span>
+              <span className="mt-0.5 block font-display text-[9px] font-bold uppercase tracking-[0.3em] text-sun">Futari Techo</span>
             </span>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/settings"
+              aria-label="設定"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink active:scale-95"
+            >
+              <Icon name="settings" size={17} />
+            </Link>
             <form action={logout}>
               <button
                 type="submit"
-                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-black/5 hover:text-danger"
+                aria-label="ロックする"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink active:scale-95"
               >
-                <Icon name="lock" size={15} />
-                ロック
+                <Icon name="lock" size={17} />
               </button>
             </form>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-5">{children}</main>
+      <main className="mx-auto w-full max-w-3xl px-4 py-5">
+        {children}
+        <MascotScene />
+      </main>
+
+      <Cheer />
 
       <AppNav />
     </div>
