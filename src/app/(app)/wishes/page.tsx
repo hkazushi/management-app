@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/ActionForm";
 import { WhoChip, WhoSelect } from "@/components/Fields";
@@ -46,7 +47,26 @@ function WishFields({ members, wish, compact = false }: { members: Member[]; wis
 }
 
 // 欲しいものリスト：手で足す。リンクも一緒に載せられる。買ったらチェック。
-export default async function WishesPage() {
+// 値段の区切り（上限は「未満」）
+const PRICE_RANGES = [
+  { key: "a", label: "〜1万円", min: 0, max: 10000 },
+  { key: "b", label: "1〜3万円", min: 10000, max: 30000 },
+  { key: "c", label: "3〜10万円", min: 30000, max: 100000 },
+  { key: "d", label: "10万円〜", min: 100000, max: Infinity },
+] as const;
+const SORTS = [
+  { key: "", label: "新しい順" },
+  { key: "cheap", label: "安い順" },
+  { key: "high", label: "高い順" },
+] as const;
+
+// ?who=（人）・?price=（値段）・?sort=（並び）で、まだ買っていないものを絞り込む
+export default async function WishesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ who?: string; price?: string; sort?: string }>;
+}) {
+  const sp = await searchParams;
   const supabase = await createClient();
   const [members, wRes] = await Promise.all([
     getMembers(supabase),
@@ -56,16 +76,50 @@ export default async function WishesPage() {
       .order("created_at", { ascending: false }),
   ]);
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
-  const open = wishes.filter((w) => !w.done);
+  const allOpen = wishes.filter((w) => !w.done);
   const bought = wishes.filter((w) => w.done);
+
+  // 絞り込みの条件。知らない値は「ぜんぶ」として扱う
+  const who = sp.who === "shared" || members.some((m) => m.user_id === sp.who) ? (sp.who as string) : "";
+  const range = PRICE_RANGES.find((r) => r.key === sp.price);
+  const noPrice = sp.price === "none";
+  const sort = SORTS.some((x) => x.key === sp.sort) ? (sp.sort as string) : "";
+  const filtered = allOpen.filter((w) => {
+    if (who === "shared" ? w.member_id !== null : who && w.member_id !== who) return false;
+    if (noPrice) return w.price === null;
+    if (range) return w.price !== null && w.price >= range.min && w.price < range.max;
+    return true;
+  });
+  // 値段で並べるとき、値段の無いものは最後に回す
+  const open = sort
+    ? [...filtered].sort((a, b) => {
+        if (a.price === null || b.price === null) return a.price === null ? (b.price === null ? 0 : 1) : -1;
+        return sort === "cheap" ? a.price - b.price : b.price - a.price;
+      })
+    : filtered;
   const total = open.reduce((n, w) => n + (w.price ?? 0), 0);
+  const filtering = !!who || !!range || noPrice;
+
+  // いまの条件を保ったまま、1つだけ変えたリンクを作る
+  const href = (next: { who?: string; price?: string; sort?: string }) => {
+    const q = { who, price: noPrice ? "none" : (range?.key ?? ""), sort, ...next };
+    const qs = Object.entries(q)
+      .filter(([, v]) => v)
+      .map(([k, v]) => `${k}=${v}`)
+      .join("&");
+    return qs ? `/wishes?${qs}` : "/wishes";
+  };
+  const chip = (active: boolean) =>
+    `flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+      active ? "border-primary bg-primary text-[#FAF4E4]" : "border-line bg-surface text-muted"
+    }`;
 
   return (
     <section className="stagger space-y-5">
       <PageTitle title="欲しいもの" label="WISH LIST" tone="bg-wine text-[#FAF4E4]" mascot="manul">
         {total > 0 && (
           <p className="shrink-0 text-right text-[11px] font-bold leading-tight text-[#FAF4E4]/80">
-            ぜんぶで
+            {filtering ? "絞り込み中の合計" : "ぜんぶで"}
             <span className="display block text-2xl text-sun">{yen(total)}</span>
           </p>
         )}
@@ -87,11 +141,61 @@ export default async function WishesPage() {
       </ActionForm>
 
       <div className="space-y-3">
-        <SectionTitle tone="bg-pink">まだ買ってない（{open.length}）</SectionTitle>
+        <SectionTitle tone="bg-pink">
+          まだ買ってない（{filtering ? `${open.length}/${allOpen.length}` : open.length}）
+        </SectionTitle>
+
+        {/* 絞り込みと並べ替え（横にスクロールできる） */}
+        {allOpen.length > 0 && (
+          <div className="space-y-2">
+            <div className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
+              <span className="shrink-0 self-center text-[11px] font-bold text-muted">人</span>
+              {[
+                { value: "", label: "ぜんぶ", color: null as string | null },
+                { value: "shared", label: "ふたり", color: "#C9A862" },
+                ...members.map((m) => ({ value: m.user_id, label: m.name, color: m.color as string | null })),
+              ].map((o) => (
+                <Link key={o.value} href={href({ who: o.value })} className={chip(who === o.value)} scroll={false}>
+                  {o.color && <span className="h-2.5 w-2.5 rounded-full" style={{ background: o.color }} />}
+                  {o.label}
+                </Link>
+              ))}
+            </div>
+            <div className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
+              <span className="shrink-0 self-center text-[11px] font-bold text-muted">値段</span>
+              <Link href={href({ price: "" })} className={chip(!range && !noPrice)} scroll={false}>
+                ぜんぶ
+              </Link>
+              {PRICE_RANGES.map((r) => (
+                <Link key={r.key} href={href({ price: r.key })} className={chip(range?.key === r.key)} scroll={false}>
+                  {r.label}
+                </Link>
+              ))}
+              <Link href={href({ price: "none" })} className={chip(noPrice)} scroll={false}>
+                値段なし
+              </Link>
+            </div>
+            <div className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
+              <span className="shrink-0 self-center text-[11px] font-bold text-muted">並び</span>
+              {SORTS.map((x) => (
+                <Link key={x.key} href={href({ sort: x.key })} className={chip(sort === x.key)} scroll={false}>
+                  {x.label}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
         {open.length === 0 ? (
           <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line px-3 py-6 text-center">
             <Manul className="h-24 w-auto" />
-            <p className="text-sm text-muted">欲しいものを、上から教えてください</p>
+            <p className="text-sm text-muted">
+              {filtering ? "この条件に合うものはありません" : "欲しいものを、上から教えてください"}
+            </p>
+            {filtering && (
+              <Link href="/wishes" className="btn-ghost !py-1.5 !text-xs" scroll={false}>
+                絞り込みをやめる
+              </Link>
+            )}
           </div>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">

@@ -6,10 +6,18 @@
 //   timetree-sync             読み取って、ふたり手帖の external_events を入れ替える
 //   timetree-sync --dry       読み取って件数だけ出す（書き込まない）
 //
+//   timetree-sync --dry は、書き込みについても「何をするつもりか」だけを出す
+//
+// 書き込み（ふたり手帖 → TimeTree。TIMETREE_WRITE=true のときだけ）:
+//   - TIMETREE_WRITE_SINCE 以降にふたり手帖で作った予定を、TIMETREE_WRITE_CALENDAR のカレンダーに入れる
+//   - ふたり手帖で直せば TimeTree も直し、消せば TimeTree も消す（対応表 timetree_links で追いかける）
+//   - 自分が書き込んだ予定は、読み取りのときには取り込まない（二重に出さない）
+//   - 1回の実行で新しく入れるのは最大 20 件（何かの間違いで大量に入るのを防ぐ）
+//
 // 大事なこと:
 //   - TimeTree には公式の連携手段が無い（API は 2023-12-22 に終了）。これは TimeTree の Web 版と同じ通信を
 //     まねる非公式の方法で、TimeTree の仕様変更で突然動かなくなることがある。
-//   - 読むだけ。TimeTree 側には何も書き込まない（GET と、ログインの1回だけ）。
+//   - TIMETREE_WRITE を true にしないかぎり読むだけで、TimeTree 側には何も書き込まない。
 //   - TimeTree のパスワードは、このMacの設定ファイルにだけ置く。ふたり手帖のサーバーや DB には送らない。
 //   - ログインは使い回す（毎回ログインすると制限にかかるため）。
 //
@@ -21,13 +29,16 @@
 //                                         ブラウザで TimeTree にログインした状態の Cookie「_session_id」の値
 //       TIMETREE_CALENDAR=家族          ← 読み取るカレンダーの名前（一部でも可。カンマ区切りで複数）
 //       TIMETREE_SHARED=false           ← true にすると、ふたり手帖のもう1人にも見える
+//       TIMETREE_WRITE=false            ← true にすると、ふたり手帖の予定を TimeTree に書き込む
+//       TIMETREE_WRITE_CALENDAR=家族    ← 書き込み先のカレンダーの名前
+//       TIMETREE_WRITE_SINCE=2026-11-25T10:00:00Z  ← これ以降に作った予定だけ書き込む
 //   ~/.claude/hooks/management-app.env   （既存。SUPABASE_URL / SUPABASE_SERVICE_KEY / MANAGEMENT_USER_ID）
 // ============================================================
 
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { randomUUID } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
 
 const CONF_DIR = path.join(os.homedir(), ".config", "futari-techo");
@@ -41,6 +52,9 @@ const HEADERS = { "Content-Type": "application/json", "X-Timetreea": "web/2.1.0/
 const PAST_DAYS = 31; // これより前の予定は入れない
 const FUTURE_DAYS = 366; // これより先の予定は入れない
 const DAY = 86400000;
+const WEB = "https://timetreeapp.com";
+const UA = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36";
+const MAX_CREATES = 20; // 1回の実行で TimeTree に新しく入れる上限
 
 function loadEnv(file) {
   const env = {};
@@ -143,6 +157,58 @@ async function fetchEvents(sessionId, calendarId) {
     since = r.since;
   }
   return all;
+}
+
+// 書き込みには、ログイン済みのページに埋まっている合言葉（CSRF トークン）が要る
+async function csrfToken(sessionId) {
+  const res = await fetch(`${WEB}/calendars`, { headers: { Cookie: `_session_id=${sessionId}`, "User-Agent": UA }, signal: AbortSignal.timeout(30000) });
+  const token = (await res.text()).match(/<meta name="csrf-token" content="([^"]+)"/)?.[1];
+  if (!res.ok || !token) throw new Error("TimeTree の書き込み用の合言葉を取得できませんでした（ログインが切れているかもしれません）");
+  return token;
+}
+
+async function ttWrite(sessionId, csrf, method, pathAndQuery, body) {
+  const res = await fetch(`${API}/${pathAndQuery}`, {
+    method,
+    headers: {
+      ...HEADERS,
+      "X-CSRF-Token": csrf,
+      Cookie: `_session_id=${sessionId}`,
+      "User-Agent": UA,
+      Origin: WEB,
+      Referer: `${WEB}/calendars`,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(30000),
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    const e = new Error(`TimeTree への書き込みに失敗しました（${method} → HTTP ${res.status}）`);
+    e.status = res.status;
+    throw e;
+  }
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+
+// ふたり手帖の予定1件を、TimeTree に送る形に直す
+export function toTimeTree(ev, { users, labels }) {
+  const who = ev.member_name ? users.filter((u) => u.name === ev.member_name) : users; // 「ふたり」は全員
+  const attendees = (who.length ? who : users).map((u) => u.id);
+  const label_id = (ev.member_name && labels.get(ev.member_name)) || labels.get("") || 1;
+  const base = { title: ev.title, label_id, note: ev.memo || "", alerts: [], attendees, virtual_user_attendees: [], recurrences: [], file_uuids: [] };
+  if (!ev.start_time) {
+    // 終日は UTC の 0 時で持つ（TimeTree の決まり）
+    const at = Date.parse(`${ev.date}T00:00:00Z`);
+    return { ...base, all_day: true, start_at: at, end_at: at, start_timezone: "UTC", end_timezone: "UTC" };
+  }
+  const start = Date.parse(`${ev.date}T${ev.start_time.slice(0, 5)}:00+09:00`);
+  const endOk = ev.end_time && ev.end_time > ev.start_time;
+  const end = endOk ? Date.parse(`${ev.date}T${ev.end_time.slice(0, 5)}:00+09:00`) : start + 3600000;
+  return { ...base, all_day: false, start_at: start, end_at: end, start_timezone: "Asia/Tokyo", end_timezone: "Asia/Tokyo" };
 }
 
 // ---------- 日付まわり ----------
@@ -268,7 +334,7 @@ function restOf(app) {
       signal: AbortSignal.timeout(30000),
     });
     const text = await res.text();
-    if (!res.ok) throw new Error(`ふたり手帖への書き込みに失敗しました（${res.status} ${text.slice(0, 160)}）`);
+    if (!res.ok) throw new Error(`ふたり手帖とのやり取りに失敗しました（${method} ${pathAndQuery.split("?")[0]} → ${res.status} ${text.slice(0, 160)}）`);
     return text ? JSON.parse(text) : null;
   };
 }
@@ -276,7 +342,11 @@ function restOf(app) {
 async function main() {
   const check = process.argv.includes("--check");
   const dry = process.argv.includes("--dry");
+  // 設定ファイルの値。同じ名前の環境変数があれば、そちらを優先する（動作確認で一時的に変えるため）
   const conf = loadEnv(CONF_FILE);
+  for (const k of ["TIMETREE_WRITE", "TIMETREE_WRITE_CALENDAR", "TIMETREE_WRITE_SINCE", "TIMETREE_CALENDAR"]) {
+    if (process.env[k] !== undefined) conf[k] = process.env[k];
+  }
   const app = loadEnv(APP_ENV);
   if (!conf.TIMETREE_SESSION && (!conf.TIMETREE_EMAIL || !conf.TIMETREE_PASSWORD)) {
     throw new Error(`設定ファイルに TIMETREE_EMAIL と TIMETREE_PASSWORD（または TIMETREE_SESSION）を書いてください: ${CONF_FILE}`);
@@ -288,6 +358,11 @@ async function main() {
     console.log("TimeTree にログインできました。カレンダー:");
     for (const c of active) console.log(`  ・${c.name}`);
     console.log(`\n読み取る対象（TIMETREE_CALENDAR）: ${conf.TIMETREE_CALENDAR || "（未設定）"}`);
+    console.log(
+      /^(true|1|yes)$/i.test(conf.TIMETREE_WRITE || "")
+        ? `書き込み: する → 「${conf.TIMETREE_WRITE_CALENDAR || "（未設定）"}」（${conf.TIMETREE_WRITE_SINCE || "開始時刻が未設定"} 以降に作った予定）`
+        : "書き込み: しない（読むだけ）",
+    );
     return;
   }
 
@@ -296,6 +371,122 @@ async function main() {
   const targets = active.filter((c) => wanted.some((w) => String(c.name).includes(w)));
   if (targets.length === 0) throw new Error(`「${wanted.join("」「")}」に当てはまるカレンダーがありません（--check で名前を確認できます）`);
 
+  // ---------- 書き込み（ふたり手帖 → TimeTree） ----------
+  const writing = /^(true|1|yes)$/i.test(conf.TIMETREE_WRITE || "");
+  const written = new Set(); // 自分が書き込んだ TimeTree の予定の ID（読み取りで除く）
+  let rest = null;
+  if (app.SUPABASE_URL && app.SUPABASE_SERVICE_KEY) rest = restOf(app);
+  if (writing) {
+    if (!rest) throw new Error(`ふたり手帖の設定が見つかりません: ${APP_ENV}`);
+    const since = conf.TIMETREE_WRITE_SINCE;
+    if (!since || Number.isNaN(Date.parse(since))) throw new Error("設定ファイルに TIMETREE_WRITE_SINCE（いつ以降の予定を書き込むか）を書いてください");
+    const wname = (conf.TIMETREE_WRITE_CALENDAR || "").trim();
+    const wcals = active.filter((c) => wname && String(c.name).includes(wname));
+    if (wcals.length !== 1) throw new Error(`書き込み先のカレンダー「${wname}」が1つに決まりません（--check で名前を確認できます）`);
+    const wcal = wcals[0];
+    const users = (wcal.calendar_users ?? []).map((u) => ({ id: u.user_id ?? u.id, name: u.name })).filter((u) => u.id);
+
+    // 人ごとの色（ラベル）は、その人が TimeTree でいちばんよく使っているものに合わせる
+    const existing = await withSession(conf, (sid) => fetchEvents(sid, wcal.id));
+    const counts = new Map();
+    for (const e of existing) {
+      if (e.deactivated_at) continue;
+      const name = users.find((u) => String(u.id) === String(e.author_id))?.name;
+      if (!name) continue;
+      const k = `${name}|${e.label_id}`;
+      counts.set(k, (counts.get(k) ?? 0) + 1);
+    }
+    const labels = new Map();
+    for (const u of users) {
+      const top = [...counts.entries()].filter(([k]) => k.startsWith(`${u.name}|`)).sort((a, b) => b[1] - a[1])[0];
+      if (top) labels.set(u.name, Number(top[0].split("|")[1]));
+    }
+    labels.set("", 9); // 「ふたり」の予定の色
+
+    const members = await rest("GET", "members?select=user_id,name", null, "return=representation");
+    const nameOf = new Map(members.map((m) => [m.user_id, m.name]));
+    const events = await rest(
+      "GET",
+      `events?select=id,date,title,start_time,end_time,member_id,memo,created_at&created_at=gte.${encodeURIComponent(since)}&order=created_at.asc&limit=1000`,
+      null,
+      "return=representation",
+    );
+    const links = await rest("GET", "timetree_links?select=event_id,timetree_calendar_id,timetree_event_id,hash", null, "return=representation");
+    const linkOf = new Map(links.map((l) => [l.event_id, l]));
+    const alive = new Set(events.map((e) => e.id));
+
+    const plan = { 追加: [], 変更: [], 削除: [] };
+    for (const ev of events) {
+      const body = toTimeTree({ ...ev, member_name: ev.member_id ? nameOf.get(ev.member_id) : null }, { users, labels });
+      const hash = createHash("sha1").update(JSON.stringify(body)).digest("hex");
+      const link = linkOf.get(ev.id);
+      if (!link) plan.追加.push({ ev, body, hash });
+      else if (link.hash !== hash) plan.変更.push({ ev, body, hash, link });
+    }
+    // ふたり手帖で消された予定（対応表にだけ残っているもの）
+    for (const l of links) if (!alive.has(l.event_id)) plan.削除.push(l);
+
+    if (dry) {
+      console.log(`（試し読み）TimeTree「${wcal.name}」への書き込み予定: 追加 ${plan.追加.length} / 変更 ${plan.変更.length} / 削除 ${plan.削除.length}`);
+      for (const p of plan.追加) console.log(`  ＋ ${p.ev.date} ${p.ev.title}`);
+    } else if (plan.追加.length + plan.変更.length + plan.削除.length > 0) {
+      const done = { 追加: 0, 変更: 0, 削除: 0, 失敗: 0 };
+      await withSession(conf, async (sid) => {
+        const csrf = await csrfToken(sid);
+        for (const p of plan.追加.slice(0, MAX_CREATES)) {
+          try {
+            const r = await ttWrite(sid, csrf, "POST", `calendar/${wcal.id}/event`, p.body);
+            const id = r?.event?.id ?? r?.event?.uuid;
+            if (!id) throw new Error("TimeTree から予定の ID が返りませんでした");
+            try {
+              await rest("POST", "timetree_links", { event_id: p.ev.id, timetree_calendar_id: String(wcal.id), timetree_event_id: id, hash: p.hash });
+            } catch (e) {
+              // 対応表に残せなかったら、次回また入れて二重になる。入れたものを取り消す
+              await ttWrite(sid, csrf, "DELETE", `calendar/${wcal.id}/event/${id}`).catch(() => {});
+              throw e;
+            }
+            done.追加 += 1;
+          } catch (e) {
+            done.失敗 += 1;
+            log(`NG 追加 ${p.ev.date} ${e instanceof Error ? e.message : e}`);
+          }
+        }
+        for (const p of plan.変更) {
+          try {
+            await ttWrite(sid, csrf, "PUT", `calendar/${p.link.timetree_calendar_id}/event/${p.link.timetree_event_id}`, p.body);
+            await rest("PATCH", `timetree_links?event_id=eq.${p.ev.id}`, { hash: p.hash, synced_at: new Date().toISOString() });
+            done.変更 += 1;
+          } catch (e) {
+            done.失敗 += 1;
+            log(`NG 変更 ${p.ev.date} ${e instanceof Error ? e.message : e}`);
+          }
+        }
+        for (const l of plan.削除) {
+          try {
+            try {
+              await ttWrite(sid, csrf, "DELETE", `calendar/${l.timetree_calendar_id}/event/${l.timetree_event_id}`);
+            } catch (e) {
+              if (e.status !== 404) throw e; // TimeTree 側ですでに消されていたら、それでよい
+            }
+            await rest("DELETE", `timetree_links?event_id=eq.${l.event_id}`);
+            done.削除 += 1;
+          } catch (e) {
+            done.失敗 += 1;
+            log(`NG 削除 ${e instanceof Error ? e.message : e}`);
+          }
+        }
+      });
+      const skipped = Math.max(0, plan.追加.length - MAX_CREATES);
+      const msg = `TimeTree「${wcal.name}」に書き込みました。追加 ${done.追加} / 変更 ${done.変更} / 削除 ${done.削除}${done.失敗 ? ` / 失敗 ${done.失敗}` : ""}${skipped ? `（残り ${skipped} 件は次回）` : ""}`;
+      console.log(msg);
+      log(`OK ${msg}`);
+    }
+    // 自分が書き込んだ予定は、読み取りで取り込まない
+    const now = await rest("GET", "timetree_links?select=timetree_event_id", null, "return=representation");
+    for (const l of now) written.add(l.timetree_event_id);
+  }
+
+  // ---------- 読み取り（TimeTree → ふたり手帖） ----------
   const today = jst(Date.now()).date;
   const from = addDays(today, -PAST_DAYS);
   const to = addDays(today, FUTURE_DAYS);
@@ -312,14 +503,16 @@ async function main() {
         ]),
       ),
     };
-    for (const ev of events) for (const r of toRows(ev, cal.name, from, to, lookup)) rows.set(r.uid, r);
+    for (const ev of events) {
+      if (written.has(ev.id) || written.has(ev.uuid)) continue; // ふたり手帖から書き込んだもの
+      for (const r of toRows(ev, cal.name, from, to, lookup)) rows.set(r.uid, r);
+    }
   }
   const list = [...rows.values()];
   const summary = `${targets.map((c) => c.name).join("・")}: ${list.length} 件（${from} 〜 ${to}）`;
   if (dry) return console.log(`（試し読み）${summary}`);
 
-  if (!app.SUPABASE_URL || !app.SUPABASE_SERVICE_KEY || !app.MANAGEMENT_USER_ID) throw new Error(`ふたり手帖の設定が見つかりません: ${APP_ENV}`);
-  const rest = restOf(app);
+  if (!rest || !app.MANAGEMENT_USER_ID) throw new Error(`ふたり手帖の設定が見つかりません: ${APP_ENV}`);
   const uid = app.MANAGEMENT_USER_ID;
   const shared = /^(true|1|yes)$/i.test(conf.TIMETREE_SHARED || "");
   const stamp = new Date().toISOString();
