@@ -75,7 +75,7 @@ AI は使っていない（環境変数 `ANTHROPIC_API_KEY` は以前のアプ�
 
 ## 4. データベース
 
-テーブルは `supabase/migrations/0008_home.sql`（単発だけ `0009_one_offs_and_feed.sql`）。
+テーブルは `supabase/migrations/0008_home.sql`（単発は `0009_one_offs.sql`、外部公開は `0010_calendar_feed.sql`）。
 
 | テーブル | 役割 |
 |---|---|

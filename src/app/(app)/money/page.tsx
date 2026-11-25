@@ -213,7 +213,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
             <SectionTitle>単発の出費・収入</SectionTitle>
             {oRes.error ? (
               <p className="rounded-2xl border border-dashed border-line px-3 py-3 text-sm text-muted">
-                単発を使うには、Supabase の SQL Editor で supabase/migrations/0009_one_offs_and_feed.sql を実行してください。
+                単発を使うには、Supabase の SQL Editor で supabase/migrations/0009_one_offs.sql を実行してください。
               </p>
             ) : (
               <>

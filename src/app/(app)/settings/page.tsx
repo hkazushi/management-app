@@ -126,7 +126,7 @@ export default async function SettingsPage() {
         </p>
         {fRes.error ? (
           <p className="rounded-2xl border border-dashed border-line px-3 py-3 text-sm text-muted">
-            使うには、Supabase の SQL Editor で supabase/migrations/0009_one_offs_and_feed.sql を実行してください。
+            使うには、Supabase の SQL Editor で supabase/migrations/0010_calendar_feed.sql を実行してください。
           </p>
         ) : token ? (
           <div className="card space-y-3 p-4">

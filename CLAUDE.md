@@ -48,7 +48,8 @@
 |---|---|
 | `0001`〜`0007` | 以前のアプリ（案件管理・議事録・ログパス）のテーブル。今は使っていない |
 | `0008_home.sql` | ふたり手帖のテーブル全部と `is_member()` |
-| `0009_one_offs_and_feed.sql` | 単発のお金（`one_offs`、本人の行だけ）と、カレンダーの外部公開（`calendar_feeds` と関数 `calendar_feed`） |
+| `0009_one_offs.sql` | 単発のお金（`one_offs`）。本人の行だけ |
+| `0010_calendar_feed.sql` | カレンダーの外部公開（`calendar_feeds` と関数 `calendar_feed`） |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
