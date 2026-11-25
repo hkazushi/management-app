@@ -26,7 +26,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
     supabase.from("one_offs").select("id,kind,name,amount,date,paid_at,memo").eq("kind", "expense").gte("date", from).lte("date", to),
     // TimeTree から読み取った予定（テーブルがまだ無ければ空）
-    supabase.from("external_events").select("id,date,title,start_time,end_time,memo,calendar_name").gte("date", from).lte("date", to),
+    supabase.from("external_events").select("*").gte("date", from).lte("date", to),
   ]);
   const externals = (xRes.data as unknown as ExternalEvent[] | null) ?? [];
   const events = (eRes.data as unknown as EventRow[] | null) ?? [];

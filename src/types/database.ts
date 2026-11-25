@@ -109,4 +109,6 @@ export type ExternalEvent = {
   end_time: string | null;
   memo: string | null;
   calendar_name: string | null;
+  author_name?: string | null; // TimeTree でその予定を入れた人（0012 以降）
+  label_color?: string | null; // TimeTree 上の色
 };

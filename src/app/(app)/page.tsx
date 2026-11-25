@@ -7,7 +7,7 @@ import { Meerkat } from "@/components/Meerkat";
 import { SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR } from "@/lib/colors";
 import { addDays, diffDays, fmtDay, fmtDayLong, fmtTimeRange, todayJST, yen } from "@/lib/format";
-import { getMembers, whoOf } from "@/lib/members";
+import { externalColor, getMembers, whoOf } from "@/lib/members";
 import { fixedLines, monthSummary, oneOffLine, statusLabel } from "@/lib/money";
 import { payFixed, setOneOffPaid } from "./money/actions";
 import type { EventRow, ExternalEvent, FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsGoal, Wish } from "@/types/database";
@@ -61,10 +61,10 @@ export default async function HomePage() {
       .or(`date.gte.${month}-01,paid_at.is.null`)
       .order("date", { ascending: true }),
     // TimeTree から読み取った予定（テーブルがまだ無ければ空）
-    supabase.from("external_events").select("id,date,title,start_time,end_time,memo,calendar_name").gte("date", today).lte("date", weekEnd),
+    supabase.from("external_events").select("*").gte("date", today).lte("date", weekEnd),
   ]);
 
-  // TimeTree の予定も、色なし・「見るだけ」の印つきで同じ並びに入れる
+  // TimeTree の予定も、入れた人の色で、同じ並びに入れる（見るだけ）
   type HomeEvent = EventRow & { external?: string };
   const events: HomeEvent[] = [
     ...((eRes.data as unknown as EventRow[] | null) ?? []),
@@ -75,10 +75,10 @@ export default async function HomePage() {
       start_time: x.start_time,
       end_time: x.end_time,
       member_id: null,
-      color: "#A39F90",
+      color: externalColor(members, x),
       memo: x.memo,
       batch_id: null,
-      external: x.calendar_name ? `TimeTree・${x.calendar_name}` : "TimeTree",
+      external: [x.author_name, x.calendar_name ? `TimeTree・${x.calendar_name}` : "TimeTree"].filter(Boolean).join("・"),
     })),
   ];
   const lines = fixedLines(
