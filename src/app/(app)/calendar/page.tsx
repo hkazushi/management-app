@@ -3,15 +3,16 @@ import { createClient } from "@/lib/supabase/server";
 import { CalendarView, type DueMark } from "@/components/CalendarView";
 import { Icon } from "@/components/Icon";
 import { PageTitle } from "@/components/PageTitle";
-import { addDays, dueDate, fmtMonth, isMonth, shiftMonth, todayJST } from "@/lib/format";
+import { addDays, dueDate, fmtMonth, isDate, isMonth, shiftMonth, todayJST } from "@/lib/format";
 import { getMembers } from "@/lib/members";
 import type { EventPreset, EventRow, FixedCost, FixedPayment } from "@/types/database";
 
 // カレンダー：月の予定を見る・足す。固定費の支払日も印で出す。
-export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
-  const { m } = await searchParams;
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string; d?: string }> }) {
+  const { m, d } = await searchParams;
   const today = todayJST();
-  const month = isMonth(m) ? m : today.slice(0, 7);
+  // ?d=日付 で来たら、その日を選んだ状態で開く
+  const month = isMonth(m) ? m : isDate(d) ? d.slice(0, 7) : today.slice(0, 7);
   const supabase = await createClient();
 
   // 前後の月にはみ出す週の分も取る
@@ -36,17 +37,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   }));
 
   const navBtn =
-    "flex h-9 w-9 items-center justify-center rounded-xl border-2 border-ink bg-surface text-ink shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none";
+    "flex h-9 w-9 items-center justify-center rounded-full border border-sun/50 bg-[#FAF4E4]/10 text-[#FAF4E4] active:scale-95";
 
   return (
     <section className="space-y-4">
-      <PageTitle title={fmtMonth(month)} label="CALENDAR" tone="bg-accent text-white">
+      <PageTitle title={fmtMonth(month)} label="CALENDAR" tone="bg-accent text-[#FAF4E4]">
         <div className="flex shrink-0 items-center gap-1.5">
           <Link href={`/calendar?m=${shiftMonth(month, -1)}`} aria-label="前の月" className={navBtn}>
             <Icon name="left" size={18} />
           </Link>
           {month !== today.slice(0, 7) && (
-            <Link href="/calendar" className={`${navBtn} !w-auto px-2.5 text-xs font-black`}>
+            <Link href="/calendar" className={`${navBtn} !w-auto px-3 text-xs font-bold`}>
               今月
             </Link>
           )}
@@ -57,11 +58,11 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       </PageTitle>
 
       {eRes.error ? (
-        <p className="card bg-danger p-4 text-sm font-black text-white">
+        <p className="card bg-danger p-4 text-sm font-bold text-white">
           データベースの準備が終わっていません。Supabase の SQL Editor で supabase/migrations/0008_home.sql を実行してください。
         </p>
       ) : (
-        <CalendarView key={month} month={month} today={today} events={events} presets={presets} members={members} dues={dues} />
+        <CalendarView key={month} month={month} today={today} initial={isDate(d) && d.startsWith(month) ? d : undefined} events={events} presets={presets} members={members} dues={dues} />
       )}
     </section>
   );

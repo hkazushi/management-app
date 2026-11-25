@@ -51,7 +51,7 @@ export function ColorPick({ name = "color", defaultValue }: { name?: string; def
           />
           <span
             title={c.name}
-            className="block h-8 w-8 rounded-full border-2 border-ink transition peer-checked:scale-110 peer-checked:shadow-[0_0_0_3px_rgb(var(--bg)),0_0_0_5px_rgb(var(--ink))]"
+            className="block h-8 w-8 rounded-full border border-line transition peer-checked:scale-110 peer-checked:shadow-[0_0_0_3px_rgb(var(--surface)),0_0_0_4.5px_rgb(var(--sun))]"
             style={{ background: c.value }}
           />
         </label>

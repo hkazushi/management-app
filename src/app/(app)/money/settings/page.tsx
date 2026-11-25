@@ -76,8 +76,8 @@ function GoalFields({ members, goal }: { members: Member[]; goal?: SavingsGoal }
   );
 }
 
-const rowClass = "rounded-2xl border-2 border-ink bg-surface px-3 py-2.5";
-const summaryClass = "cursor-pointer text-[11px] font-black text-muted";
+const rowClass = "rounded-2xl border border-line bg-surface px-3 py-2.5";
+const summaryClass = "cursor-pointer text-[11px] font-bold text-muted";
 
 // お金の設定：毎月の収入・固定費・貯金の目標を登録する
 export default async function MoneySettingsPage() {
@@ -94,11 +94,11 @@ export default async function MoneySettingsPage() {
 
   return (
     <section className="space-y-6">
-      <Link href="/money" className="inline-flex items-center gap-1 text-sm font-black text-ink">
+      <Link href="/money" className="inline-flex items-center gap-1 text-sm font-bold text-ink">
         <Icon name="left" size={16} />
         お金にもどる
       </Link>
-      <PageTitle title="お金の設定" label="SETTINGS" tone="bg-sun text-ink" />
+      <PageTitle title="お金の設定" label="SETTINGS" tone="bg-ink text-[#FAF4E4]" />
 
       {/* 収入 */}
       <div className="space-y-3">
@@ -107,7 +107,7 @@ export default async function MoneySettingsPage() {
           {incomes.map((i) => (
             <li key={i.id} className={rowClass}>
               <div className="flex items-center gap-2">
-                <p className="min-w-0 flex-1 truncate text-[15px] font-black">{i.name}</p>
+                <p className="min-w-0 flex-1 truncate text-[15px] font-bold">{i.name}</p>
                 <WhoChip members={members} memberId={i.member_id} />
                 <p className="display shrink-0">{yen(i.amount)}</p>
               </div>
@@ -120,7 +120,7 @@ export default async function MoneySettingsPage() {
                   </button>
                 </ActionForm>
                 <ActionForm action={deleteIncome.bind(null, i.id)} confirmText={`「${i.name}」を消しますか？`} className="mt-1">
-                  <button type="submit" className="w-full py-1.5 text-xs font-black text-danger">
+                  <button type="submit" className="w-full py-1.5 text-xs font-bold text-danger">
                     消す
                   </button>
                 </ActionForm>
@@ -145,7 +145,7 @@ export default async function MoneySettingsPage() {
             <li key={c.id} className={`${rowClass} ${c.active ? "" : "opacity-60"}`}>
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-black">{c.name}</p>
+                  <p className="truncate text-[15px] font-bold">{c.name}</p>
                   <p className="text-xs font-bold text-muted">
                     毎月{dayLabel(c.due_day)}まで{c.active ? "" : "・停止中"}
                     {c.memo ? `・${c.memo}` : ""}
@@ -164,12 +164,12 @@ export default async function MoneySettingsPage() {
                 </ActionForm>
                 <div className="mt-1 grid grid-cols-2 gap-2">
                   <form action={setFixedActive.bind(null, c.id, !c.active)}>
-                    <button type="submit" className="w-full py-1.5 text-xs font-black text-muted">
+                    <button type="submit" className="w-full py-1.5 text-xs font-bold text-muted">
                       {c.active ? "解約した（今後は出さない）" : "また払うようにする"}
                     </button>
                   </form>
                   <ActionForm action={deleteFixed.bind(null, c.id)} confirmText={`「${c.name}」を、これまでの支払い記録ごと消しますか？`}>
-                    <button type="submit" className="w-full py-1.5 text-xs font-black text-danger">
+                    <button type="submit" className="w-full py-1.5 text-xs font-bold text-danger">
                       記録ごと消す
                     </button>
                   </ActionForm>
@@ -195,7 +195,7 @@ export default async function MoneySettingsPage() {
             <li key={g.id} className={rowClass}>
               <div className="flex items-center gap-2">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-black">{g.name}</p>
+                  <p className="truncate text-[15px] font-bold">{g.name}</p>
                   <p className="text-xs font-bold text-muted">
                     {g.target ? `目標 ${yen(g.target)}` : "目標額なし"}
                     {g.monthly ? `・毎月 ${yen(g.monthly)}` : ""}
@@ -212,7 +212,7 @@ export default async function MoneySettingsPage() {
                   </button>
                 </ActionForm>
                 <ActionForm action={deleteGoal.bind(null, g.id)} confirmText={`「${g.name}」を、入金の記録ごと消しますか？`} className="mt-1">
-                  <button type="submit" className="w-full py-1.5 text-xs font-black text-danger">
+                  <button type="submit" className="w-full py-1.5 text-xs font-bold text-danger">
                     記録ごと消す
                   </button>
                 </ActionForm>

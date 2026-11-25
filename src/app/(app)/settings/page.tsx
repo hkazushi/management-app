@@ -29,18 +29,18 @@ export default async function SettingsPage() {
 
   return (
     <section className="space-y-6">
-      <PageTitle title="設定" label="SETTINGS" tone="bg-sun text-ink" />
+      <PageTitle title="設定" label="SETTINGS" tone="bg-ink text-[#FAF4E4]" />
 
       <div className="space-y-3">
         <SectionTitle tone="bg-primary">じぶん</SectionTitle>
         {me ? (
           <ActionForm action={updateMe} keep className="card space-y-3 p-4">
-            <label className="block text-[11px] font-black text-muted">
+            <label className="block text-[11px] font-bold text-muted">
               名前（予定や支払いに出ます）
               <input name="name" required maxLength={12} defaultValue={me.name} className="input mt-0.5" />
             </label>
             <div>
-              <p className="mb-1.5 text-[11px] font-black text-muted">じぶんの色</p>
+              <p className="mb-1.5 text-[11px] font-bold text-muted">じぶんの色</p>
               <ColorPick defaultValue={me.color} />
             </div>
             <button type="submit" className="btn-primary w-full">
@@ -69,10 +69,10 @@ export default async function SettingsPage() {
             {presets.map((p) => {
               const color = p.color ?? (p.member_id ? whoOf(members, p.member_id).color : DEFAULT_COLOR);
               return (
-                <li key={p.id} className="flex items-center gap-2 rounded-2xl border-2 border-ink bg-surface px-3 py-2">
-                  <span className="h-5 w-5 shrink-0 rounded-full border-2 border-ink" style={{ background: color }} />
+                <li key={p.id} className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2">
+                  <span className="h-5 w-5 shrink-0 rounded-full border border-line" style={{ background: color }} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[15px] font-black">{p.title}</p>
+                    <p className="truncate text-[15px] font-bold">{p.title}</p>
                     <p className="text-xs font-bold text-muted">
                       {[fmtTimeRange(p.start_time, p.end_time) || "時間なし", whoOf(members, p.member_id).name].join("・")}
                     </p>
@@ -90,11 +90,11 @@ export default async function SettingsPage() {
         <ActionForm action={addPreset} className="card space-y-3 p-4">
           <input name="title" required placeholder="予定の名前（仕事・デート・ジムなど）" className="input" />
           <div className="grid grid-cols-2 gap-2">
-            <label className="text-[11px] font-black text-muted">
+            <label className="text-[11px] font-bold text-muted">
               はじまり
               <input name="start_time" type="time" className="input mt-0.5" />
             </label>
-            <label className="text-[11px] font-black text-muted">
+            <label className="text-[11px] font-bold text-muted">
               おわり
               <input name="end_time" type="time" className="input mt-0.5" />
             </label>

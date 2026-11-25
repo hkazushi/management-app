@@ -3,31 +3,34 @@
 @tailwind utilities;
 
 /*
-  ポップな紙もの風。クリーム色の紙に、黒の太い線・ずらした影・原色の色面。
-  ぼかした影やグラデーションは使わない（のっぺりした「よくあるアプリ」に見えるため）。
+  上質な文具・ホテルのしおりのような見た目。
+  生成りの紙に、深い緑と紺、金の細い線。見出しは明朝、数字は欧文のセリフ体。
+  影はごく薄く、線は細く。原色・太い枠・強い影は使わない。
   rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 255 244 224; /* クリーム色の紙 */
-  --surface: 255 255 255;
-  --elevated: 255 255 255;
-  --border: 20 18 15; /* 線は黒 */
-  --ink: 20 18 15;
-  --muted: 92 84 74;
-  --faint: 150 140 128;
+  --bg: 246 241 231; /* 生成りの紙 */
+  --surface: 255 253 248;
+  --elevated: 255 253 248;
+  --line: 219 205 176; /* 金がかった細い線 */
+  --border: 219 205 176;
+  --ink: 27 36 32; /* 緑がかった黒 */
+  --muted: 105 106 96;
+  --faint: 163 159 144;
 
-  --primary: 255 77 46; /* トマト */
-  --primary-deep: 220 52 24;
-  --accent: 43 75 255; /* コバルト */
-  --sun: 255 200 61; /* からし */
-  --mint: 25 195 154;
-  --pink: 255 143 199;
-  --lilac: 182 156 255;
-  --sky: 120 200 255;
+  --primary: 20 70 58; /* 深い緑 */
+  --primary-deep: 12 50 41;
+  --accent: 30 47 82; /* 紺 */
+  --wine: 112 34 50; /* 深いワイン */
+  --sun: 201 168 98; /* 金 */
+  --mint: 208 221 205; /* セージ */
+  --pink: 237 214 207; /* ブラッシュ */
+  --lilac: 221 212 228; /* モーブ */
+  --sky: 206 219 229; /* ミスト */
 
-  --success: 14 150 110;
-  --warning: 200 120 0;
-  --danger: 225 40 40;
+  --success: 46 125 96;
+  --warning: 176 128 40;
+  --danger: 155 44 58; /* ワイン */
 }
 
 html,
@@ -38,88 +41,108 @@ body {
 
 body {
   background-color: rgb(var(--bg));
-  /* 紙の上の細かい点 */
-  background-image: radial-gradient(rgb(var(--ink) / 0.09) 1px, transparent 1px);
-  background-size: 14px 14px;
+  /* 紙の上のほうがわずかに明るい */
+  background-image: radial-gradient(120% 60% at 50% 0%, rgb(255 253 248 / 0.9), transparent 70%);
+  background-attachment: fixed;
   color: rgb(var(--ink));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
-/* 選択中の文字もテーマ色に */
 ::selection {
-  background: rgb(var(--sun));
+  background: rgb(var(--sun) / 0.45);
   color: rgb(var(--ink));
 }
 
 @layer components {
   .card {
-    border-radius: 18px;
+    border-radius: 20px;
     background: rgb(var(--surface));
-    border: 2px solid rgb(var(--ink));
-    box-shadow: 4px 4px 0 rgb(var(--ink));
+    border: 1px solid rgb(var(--line));
+    box-shadow:
+      0 1px 2px rgb(40 32 16 / 0.05),
+      0 14px 30px -18px rgb(40 32 16 / 0.28);
   }
-  /* 押すと影の分だけ沈むボタン */
   .btn-primary,
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 text-sm font-black transition-transform;
-    border-radius: 14px;
-    border: 2px solid rgb(var(--ink));
-    box-shadow: 3px 3px 0 rgb(var(--ink));
-    padding: 0.6rem 1rem;
+    @apply inline-flex items-center justify-center gap-1.5 text-sm font-bold transition;
+    border-radius: 999px;
+    padding: 0.65rem 1.15rem;
+    letter-spacing: 0.04em;
   }
+  /* 深い緑に、内側の金の細線 */
   .btn-primary {
     background: rgb(var(--primary));
-    color: #fff;
+    color: rgb(250 244 228);
+    border: 1px solid rgb(var(--primary-deep));
+    box-shadow:
+      inset 0 0 0 1px rgb(var(--sun) / 0.55),
+      0 10px 20px -12px rgb(var(--primary) / 0.7);
+  }
+  .btn-primary:hover {
+    background: rgb(var(--primary-deep));
   }
   .btn-ghost {
     background: rgb(var(--surface));
     color: rgb(var(--ink));
+    border: 1px solid rgb(var(--line));
+    box-shadow: 0 1px 2px rgb(40 32 16 / 0.05);
+  }
+  .btn-ghost:hover {
+    border-color: rgb(var(--sun));
   }
   .btn-primary:active,
   .btn-ghost:active {
-    transform: translate(3px, 3px);
-    box-shadow: 0 0 0 rgb(var(--ink));
+    transform: scale(0.97);
   }
   .btn-primary:disabled,
   .btn-ghost:disabled {
-    opacity: 0.55;
+    opacity: 0.5;
     cursor: not-allowed;
   }
   .input {
-    @apply w-full text-ink outline-none placeholder:text-faint;
+    @apply w-full text-ink outline-none transition placeholder:text-faint;
     font-size: 16px; /* 16px 未満だと iPhone が入力時に拡大する */
-    font-weight: 500;
-    border-radius: 12px;
-    padding: 0.6rem 0.8rem;
+    border-radius: 14px;
+    padding: 0.65rem 0.9rem;
     background: rgb(var(--surface));
-    border: 2px solid rgb(var(--ink));
+    border: 1px solid rgb(var(--line));
   }
   .input:focus {
-    box-shadow: 3px 3px 0 rgb(var(--accent));
+    border-color: rgb(var(--sun));
+    box-shadow: 0 0 0 3px rgb(var(--sun) / 0.22);
   }
   .chip {
-    @apply inline-flex items-center gap-1 text-xs font-bold;
+    @apply inline-flex items-center gap-1 text-[11px] font-bold;
     border-radius: 999px;
-    padding: 0.15rem 0.6rem;
-    border: 1.5px solid rgb(var(--ink));
+    padding: 0.12rem 0.6rem;
+    letter-spacing: 0.03em;
   }
-  /* 見出し用の太い書体 */
+  /* 見出しと金額：欧文はセリフ体、和文は明朝 */
   .display {
-    font-family: var(--font-display), var(--font-body), sans-serif;
-    letter-spacing: 0.01em;
+    font-family: var(--font-latin), var(--font-display), serif;
+    font-weight: 700;
+    letter-spacing: 0.02em;
   }
-  /* 少し傾けたラベル */
+  /* 小さな英字ラベル（字間を広く、左に金の線） */
   .sticker {
-    @apply inline-block text-[11px] font-black;
-    font-family: var(--font-display), var(--font-body), sans-serif;
-    border-radius: 8px;
-    padding: 0.1rem 0.5rem;
-    border: 2px solid rgb(var(--ink));
-    transform: rotate(-3deg);
+    @apply inline-flex items-center gap-2 text-[10px] font-bold uppercase;
+    font-family: var(--font-latin), serif;
+    letter-spacing: 0.32em;
+  }
+  .sticker::before {
+    content: "";
+    width: 18px;
+    height: 1px;
+    background: rgb(var(--sun));
   }
   .section-label {
-    @apply text-sm font-black text-ink;
-    font-family: var(--font-display), var(--font-body), sans-serif;
+    @apply text-sm font-bold text-ink;
+    font-family: var(--font-latin), var(--font-display), serif;
+  }
+  /* 金の細い区切り線 */
+  .rule {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgb(var(--sun) / 0.8), transparent);
   }
 }

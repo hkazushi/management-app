@@ -1,21 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Dela_Gothic_One, Zen_Maru_Gothic } from "next/font/google";
+import { Cormorant_Garamond, Shippori_Mincho_B1, Zen_Kaku_Gothic_New } from "next/font/google";
 import "./globals.css";
 
-// 見出しは極太のデラゴシック、本文は丸ゴシック。日本語の書体は大きいので先読みしない。
-const display = Dela_Gothic_One({
-  weight: "400",
+// 見出しは明朝、本文は細身のゴシック、数字と英字はセリフ体。日本語の書体は大きいので先読みしない。
+const display = Shippori_Mincho_B1({
+  weight: ["600", "700", "800"],
   subsets: ["latin"],
   variable: "--font-display",
   display: "swap",
   preload: false,
 });
-const body = Zen_Maru_Gothic({
-  weight: ["500", "700", "900"],
+const body = Zen_Kaku_Gothic_New({
+  weight: ["400", "500", "700"],
   subsets: ["latin"],
   variable: "--font-body",
   display: "swap",
   preload: false,
+});
+const latin = Cormorant_Garamond({
+  weight: ["600", "700"],
+  subsets: ["latin"],
+  variable: "--font-latin",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +32,7 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#FFF4E0",
+  themeColor: "#F6F1E7",
 };
 
 export default function RootLayout({
@@ -35,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${display.variable} ${body.variable}`}>
+    <html lang="ja" className={`${display.variable} ${body.variable} ${latin.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

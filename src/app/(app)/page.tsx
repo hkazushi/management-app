@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { WhoChip } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
+import { Meerkat } from "@/components/Meerkat";
 import { SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR } from "@/lib/colors";
 import { addDays, diffDays, fmtDay, fmtDayLong, fmtTimeRange, todayJST, yen } from "@/lib/format";
@@ -80,48 +81,66 @@ export default async function HomePage() {
   return (
     <section className="space-y-6">
       {eRes.error && (
-        <p className="card bg-danger p-4 text-sm font-black text-white">
+        <p className="card bg-danger p-4 text-sm font-bold text-white">
           データベースの準備が終わっていません。Supabase の SQL Editor で supabase/migrations/0008_home.sql を実行してください。
         </p>
       )}
 
       {/* 今日 */}
-      <div className="relative overflow-hidden rounded-[24px] border-2 border-ink bg-primary px-4 pb-4 pt-5 text-white shadow-hard-lg">
-        <svg className="pointer-events-none absolute -right-6 -top-8 h-32 w-32 text-sun" viewBox="0 0 100 100" aria-hidden="true">
-          <path
-            fill="currentColor"
-            stroke="rgb(20 18 15)"
-            strokeWidth="2"
-            d="M50 4l9 18 20-8-4 21 21 6-16 14 13 17-21 2 1 21-18-11-13 17-6-20-21 3 10-19L9 54l19-9-9-19 21 3z"
-          />
+      <div className="relative overflow-hidden rounded-[26px] bg-primary px-5 pb-5 pt-6 text-[#FAF4E4] shadow-hard-lg">
+        <svg className="pointer-events-none absolute -right-14 -top-16 h-64 w-64 text-sun opacity-35" viewBox="0 0 100 100" aria-hidden="true">
+          {[14, 22, 30, 38, 46].map((r) => (
+            <circle key={r} cx="50" cy="50" r={r} fill="none" stroke="currentColor" strokeWidth="0.4" />
+          ))}
         </svg>
-        <span className="sticker bg-surface text-ink">TODAY</span>
-        <p className="display mt-2 text-[34px] leading-none">{fmtDayLong(today)}</p>
-        <p className="mt-1.5 text-sm font-black text-white/90">{me ? `${me.name}、おつかれさま。` : "おつかれさま。"}</p>
+        <span className="pointer-events-none absolute inset-[6px] rounded-[21px] border border-sun/40" aria-hidden="true" />
+        <Meerkat className="pointer-events-none absolute -bottom-3 right-4 h-[132px] w-auto" />
 
-        <div className="relative mt-4 space-y-2">
+        <div className="relative pr-24">
+          <span className="sticker text-sun">Today</span>
+          <p className="display mt-2 text-[36px] leading-none">{fmtDayLong(today)}</p>
+          <p className="mt-2 text-sm text-[#FAF4E4]/80">{me ? `${me.name}さん、おつかれさまです。` : "おつかれさまです。"}</p>
+        </div>
+
+        <div className="relative mt-5 space-y-2 pr-24">
           {todays.length === 0 ? (
-            <p className="rounded-2xl border-2 border-ink bg-surface px-3 py-3 text-sm font-black text-ink">今日は予定なし。のんびりどうぞ。</p>
+            <p className="rounded-2xl bg-[#FAF4E4]/10 px-3.5 py-3 text-sm text-[#FAF4E4]/90">今日の予定はありません。</p>
           ) : (
             todays.map((e) => (
-              <div key={e.id} className="flex items-stretch overflow-hidden rounded-2xl border-2 border-ink bg-surface text-ink">
-                <span className="w-3 shrink-0 border-r-2 border-ink" style={{ background: colorOf(e) }} />
+              <div key={e.id} className="flex items-stretch overflow-hidden rounded-2xl bg-surface text-ink">
+                <span className="w-1.5 shrink-0" style={{ background: colorOf(e) }} />
                 <div className="min-w-0 flex-1 px-3 py-2">
-                  <p className="text-[15px] font-black leading-snug">{e.title}</p>
-                  <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs font-bold text-muted">
+                  <p className="text-[15px] font-bold leading-snug">{e.title}</p>
+                  <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted">
                     {e.start_time && <span>{fmtTimeRange(e.start_time, e.end_time)}</span>}
                     <span>{whoOf(members, e.member_id).name}</span>
-                    {e.memo && <span className="font-medium">{e.memo}</span>}
+                    {e.memo && <span>{e.memo}</span>}
                   </p>
                 </div>
               </div>
             ))
           )}
         </div>
-        <Link href="/calendar" className="btn-ghost relative mt-3 w-full">
-          <Icon name="plus" size={16} />
-          予定を入れる
-        </Link>
+      </div>
+
+      {/* よく使う入口 */}
+      <div className="grid grid-cols-3 gap-2.5">
+        {[
+          { href: `/calendar?d=${today}`, icon: "calendar" as const, label: "予定を入れる" },
+          { href: "/wishes#add", icon: "gift" as const, label: "欲しいもの" },
+          { href: "/money", icon: "coin" as const, label: "支払いを見る" },
+        ].map((a) => (
+          <Link
+            key={a.href}
+            href={a.href}
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-line bg-surface px-2 py-3.5 text-xs font-bold text-ink shadow-hard-sm transition active:scale-95"
+          >
+            <span className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sun">
+              <Icon name={a.icon} size={19} />
+            </span>
+            {a.label}
+          </Link>
+        ))}
       </div>
 
       {/* 支払い */}
@@ -132,13 +151,13 @@ export default async function HomePage() {
             {urgent.map((l) => (
               <li
                 key={l.cost.id}
-                className={`flex items-center gap-3 rounded-2xl border-2 border-ink px-3 py-2.5 shadow-hard-sm ${
-                  l.status === "overdue" ? "bg-danger text-white" : l.status === "today" ? "bg-sun" : "bg-surface"
+                className={`flex items-center gap-3 rounded-2xl border border-line px-3 py-2.5 shadow-hard-sm ${
+                  l.status === "overdue" ? "bg-danger text-white" : l.status === "today" ? "bg-sun/40" : "bg-surface"
                 }`}
               >
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15px] font-black">{l.cost.name}</p>
-                  <p className={`text-xs font-black ${l.status === "overdue" ? "text-white/90" : "text-muted"}`}>
+                  <p className="truncate text-[15px] font-bold">{l.cost.name}</p>
+                  <p className={`text-xs font-bold ${l.status === "overdue" ? "text-white/90" : "text-muted"}`}>
                     {fmtDay(l.due)}まで・{statusLabel(l)}
                   </p>
                 </div>
@@ -156,12 +175,12 @@ export default async function HomePage() {
 
       {/* お金 */}
       {hasMoney && (
-        <Link href="/money" className="block overflow-hidden rounded-[22px] border-2 border-ink shadow-hard">
-          <div className={`px-4 py-3.5 ${sum.free < 0 ? "bg-danger text-white" : "bg-mint text-ink"}`}>
-            <p className="text-xs font-black opacity-80">今月、自由に使えるお金</p>
-            <p className="display mt-0.5 text-[32px] leading-none">{yen(sum.free)}</p>
+        <Link href="/money" className="block overflow-hidden rounded-[22px] border border-line shadow-hard">
+          <div className={`px-5 py-4 ${sum.free < 0 ? "bg-danger text-white" : "bg-accent text-[#FAF4E4]"}`}>
+            <p className="text-xs font-bold opacity-80">今月、自由に使えるお金</p>
+            <p className="display mt-1 text-[36px] leading-none text-sun">{yen(sum.free)}</p>
           </div>
-          <p className="flex items-center justify-between border-t-2 border-ink bg-surface px-4 py-2 text-xs font-black text-ink">
+          <p className="flex items-center justify-between border-t border-line bg-surface px-4 py-2 text-xs font-bold text-ink">
             <span>
               {unpaid.length > 0 ? `固定費 のこり${unpaid.length}件（${yen(sum.unpaid)}）` : lines.length > 0 ? "今月の固定費はぜんぶ支払い済み" : "固定費は未登録"}
             </span>
@@ -175,7 +194,7 @@ export default async function HomePage() {
         <SectionTitle
           tone="bg-accent"
           right={
-            <Link href="/calendar" className="text-xs font-black text-accent underline decoration-2 underline-offset-2">
+            <Link href="/calendar" className="text-xs font-bold text-accent underline decoration-sun underline-offset-4">
               カレンダー
             </Link>
           }
@@ -183,7 +202,7 @@ export default async function HomePage() {
           この先1週間
         </SectionTitle>
         {later.length === 0 ? (
-          <p className="rounded-2xl border-2 border-dashed border-ink/40 px-3 py-4 text-center text-sm font-bold text-muted">この先1週間の予定はまだありません</p>
+          <p className="rounded-2xl border border-dashed border-line px-3 py-4 text-center text-sm font-bold text-muted">この先1週間の予定はまだありません</p>
         ) : (
           <ul className="space-y-2">
             {later.map(([date, list]) => (
@@ -191,9 +210,9 @@ export default async function HomePage() {
                 <p className="display w-[4.2rem] shrink-0 pt-2 text-[13px] leading-tight text-ink">{dayWord(date)}</p>
                 <div className="min-w-0 flex-1 space-y-1.5">
                   {list.map((e) => (
-                    <div key={e.id} className="flex items-stretch overflow-hidden rounded-xl border-2 border-ink bg-surface">
-                      <span className="w-2.5 shrink-0 border-r-2 border-ink" style={{ background: colorOf(e) }} />
-                      <p className="min-w-0 flex-1 truncate px-2.5 py-1.5 text-sm font-black">
+                    <div key={e.id} className="flex items-stretch overflow-hidden rounded-xl border border-line bg-surface">
+                      <span className="w-1.5 shrink-0" style={{ background: colorOf(e) }} />
+                      <p className="min-w-0 flex-1 truncate px-2.5 py-1.5 text-sm font-bold">
                         {e.title}
                         {e.start_time && <span className="ml-2 text-xs font-bold text-muted">{fmtTimeRange(e.start_time, e.end_time)}</span>}
                       </p>
@@ -212,7 +231,7 @@ export default async function HomePage() {
           <SectionTitle
             tone="bg-pink"
             right={
-              <Link href="/wishes" className="text-xs font-black text-accent underline decoration-2 underline-offset-2">
+              <Link href="/wishes" className="text-xs font-bold text-accent underline decoration-sun underline-offset-4">
                 ぜんぶ見る
               </Link>
             }
@@ -221,9 +240,9 @@ export default async function HomePage() {
           </SectionTitle>
           <ul className="space-y-2">
             {wishes.map((w) => (
-              <li key={w.id} className="flex items-center gap-2 rounded-2xl border-2 border-ink bg-pink/40 px-3 py-2">
+              <li key={w.id} className="flex items-center gap-2 rounded-2xl border border-line bg-surface px-3 py-2.5">
                 <Icon name="gift" size={17} className="shrink-0" />
-                <p className="min-w-0 flex-1 truncate text-sm font-black">{w.title}</p>
+                <p className="min-w-0 flex-1 truncate text-sm font-bold">{w.title}</p>
                 <WhoChip members={members} memberId={w.member_id} />
                 {w.price !== null && <span className="display shrink-0 text-sm">{yen(w.price)}</span>}
               </li>

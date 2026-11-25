@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// ポップな紙もの風。色の実体は globals.css の CSS 変数で定義する。
+// 上質な文具風。色の実体は globals.css の CSS 変数で定義する。
 const config: Config = {
   content: [
     "./src/app/**/*.{ts,tsx}",
@@ -14,12 +14,14 @@ const config: Config = {
         surface: "rgb(var(--surface) / <alpha-value>)",
         elevated: "rgb(var(--elevated) / <alpha-value>)",
         border: "rgb(var(--border) / <alpha-value>)",
+        line: "rgb(var(--line) / <alpha-value>)",
         ink: "rgb(var(--ink) / <alpha-value>)",
         muted: "rgb(var(--muted) / <alpha-value>)",
         faint: "rgb(var(--faint) / <alpha-value>)",
         primary: "rgb(var(--primary) / <alpha-value>)",
         "primary-deep": "rgb(var(--primary-deep) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
+        wine: "rgb(var(--wine) / <alpha-value>)",
         sun: "rgb(var(--sun) / <alpha-value>)",
         mint: "rgb(var(--mint) / <alpha-value>)",
         pink: "rgb(var(--pink) / <alpha-value>)",
@@ -34,18 +36,18 @@ const config: Config = {
         "2xl": "1.15rem",
         "3xl": "1.6rem",
       },
-      // 影はぼかさず、黒をずらして置く
+      // 影はごく薄く、下に長く
       boxShadow: {
-        card: "4px 4px 0 rgb(var(--ink))",
-        hard: "4px 4px 0 rgb(var(--ink))",
-        "hard-sm": "2px 2px 0 rgb(var(--ink))",
-        "hard-lg": "6px 6px 0 rgb(var(--ink))",
-        pop: "6px 6px 0 rgb(var(--ink))",
-        glow: "4px 4px 0 rgb(var(--ink))",
+        card: "0 1px 2px rgb(40 32 16 / 0.05), 0 14px 30px -18px rgb(40 32 16 / 0.28)",
+        hard: "0 1px 2px rgb(40 32 16 / 0.05), 0 14px 30px -18px rgb(40 32 16 / 0.28)",
+        "hard-sm": "0 1px 2px rgb(40 32 16 / 0.06), 0 6px 14px -10px rgb(40 32 16 / 0.22)",
+        "hard-lg": "0 2px 4px rgb(40 32 16 / 0.06), 0 26px 48px -24px rgb(20 50 40 / 0.45)",
+        pop: "0 2px 4px rgb(40 32 16 / 0.06), 0 26px 48px -24px rgb(20 50 40 / 0.45)",
+        glow: "0 10px 20px -12px rgb(var(--primary) / 0.7)",
       },
       fontFamily: {
-        sans: ["var(--font-body)", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Meiryo", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-body)", "sans-serif"],
+        sans: ["var(--font-body)", "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Meiryo", "sans-serif"],
+        display: ["var(--font-latin)", "var(--font-display)", "Hiragino Mincho ProN", "serif"],
       },
     },
   },

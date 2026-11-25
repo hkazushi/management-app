@@ -11,7 +11,7 @@
 create table members (
   user_id uuid primary key references auth.users(id) on delete cascade,
   name text not null,
-  color text not null default '#E07A3F',
+  color text not null default '#14463A',
   sort int not null default 0
 );
 
@@ -153,6 +153,6 @@ create policy "members all" on savings_entries for all using (is_member()) with 
 -- いまある2つのアカウント（PIN ごと）を登録する。名前はあとで設定画面から変えられる
 insert into members (user_id, name, color, sort)
 select id, case row_number() over (order by created_at) when 1 then '1人目' else '2人目' end,
-       case row_number() over (order by created_at) when 1 then '#E07A3F' else '#3F8FE0' end,
+       case row_number() over (order by created_at) when 1 then '#14463A' else '#9B2C3A' end,
        row_number() over (order by created_at)
 from auth.users;

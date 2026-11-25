@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { login, type LoginState } from "./actions";
 import { Icon } from "@/components/Icon";
+import { Meerkat } from "@/components/Meerkat";
 
 const initialState: LoginState = { error: "" };
 
@@ -12,12 +13,12 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <div className="mb-7 flex flex-col items-center text-center">
-          <span className="mb-4 flex h-20 w-20 -rotate-6 items-center justify-center rounded-3xl border-2 border-ink bg-sun text-ink shadow-hard">
-            <span className="display text-4xl leading-none">ふ</span>
-          </span>
-          <h1 className="display text-3xl text-ink">ふたり手帖</h1>
-          <p className="mt-2 text-sm font-bold text-muted">予定・欲しいもの・お金を、ふたりで。</p>
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Meerkat className="h-40 w-auto drop-shadow-[0_14px_14px_rgb(40_32_16/0.18)]" />
+          <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-[0.36em] text-sun">Futari Techo</p>
+          <h1 className="display mt-1 text-[34px] leading-tight text-ink">ふたり手帖</h1>
+          <div className="rule mt-3 w-40" />
+          <p className="mt-3 text-sm text-muted">予定・欲しいもの・お金を、ふたりで。</p>
         </div>
 
         <form action={formAction} className="card p-6">

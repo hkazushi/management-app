@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
 import { Icon } from "@/components/Icon";
+import { Meerkat } from "@/components/Meerkat";
 import { logout } from "./actions";
 
 // 認証済みエリアの共通シェル。未ログインの遮断は middleware が担うため、
@@ -12,19 +13,20 @@ export default function AppLayout({
 }) {
   return (
     <div className="min-h-dvh pb-28">
-      <header className="sticky top-0 z-20 border-b-2 border-ink bg-bg">
+      <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-8 w-8 -rotate-6 items-center justify-center rounded-lg border-2 border-ink bg-sun text-ink shadow-hard-sm">
-              <span className="display text-[15px] leading-none">ふ</span>
+          <Link href="/" className="flex items-center gap-2.5">
+            <Meerkat variant="peek" className="h-8 w-auto" />
+            <span className="leading-none">
+              <span className="display block text-[18px] text-ink">ふたり手帖</span>
+              <span className="mt-0.5 block font-display text-[9px] font-bold uppercase tracking-[0.3em] text-sun">Futari Techo</span>
             </span>
-            <span className="display text-[17px] text-ink">ふたり手帖</span>
           </Link>
           <div className="flex items-center gap-1.5">
             <Link
               href="/settings"
               aria-label="設定"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-ink bg-surface text-ink shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+              className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink active:scale-95"
             >
               <Icon name="settings" size={17} />
             </Link>
@@ -32,7 +34,7 @@ export default function AppLayout({
               <button
                 type="submit"
                 aria-label="ロックする"
-                className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-ink bg-surface text-ink shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-line bg-surface text-ink active:scale-95"
               >
                 <Icon name="lock" size={17} />
               </button>

@@ -10,5 +10,5 @@ export async function getMembers(supabase: SupabaseClient): Promise<Member[]> {
 // 「誰の」の表示名と色。null は「2人」
 export function whoOf(members: Member[], memberId: string | null): { name: string; color: string } {
   const m = members.find((x) => x.user_id === memberId);
-  return m ? { name: m.name, color: m.color } : { name: "ふたり", color: "#FFC83D" };
+  return m ? { name: m.name, color: m.color } : { name: "ふたり", color: "#C9A862" };
 }

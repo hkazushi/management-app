@@ -41,6 +41,27 @@ export async function addEvents(dates: string[], input: EventInput): Promise<{ e
   return {};
 }
 
+// 1件の予定を直す
+export async function updateEvent(id: string, input: EventInput): Promise<{ error?: string }> {
+  const title = input.title.trim();
+  if (!title) return { error: "予定の名前を入れてください" };
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("events")
+    .update({
+      title,
+      start_time: time(input.start_time),
+      end_time: time(input.end_time),
+      member_id: input.member_id || null,
+      color: isColor(input.color) ? input.color : null,
+      memo: input.memo.trim() || null,
+    })
+    .eq("id", id);
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return {};
+}
+
 export async function deleteEvent(id: string) {
   const supabase = await createClient();
   await supabase.from("events").delete().eq("id", id);
