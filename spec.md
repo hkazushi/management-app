@@ -140,8 +140,9 @@ TimeTree の公式 API は 2023-12-22 に終了しているため、直接は書
 ## 8. スマホでの使い方
 
 - スマホの幅（375px〜）を基準に作っている。広い画面では余白と文字が少し大きくなる。
-- iPhone の Safari で「ホーム画面に追加」すると、アドレスバーの無いアプリのように開く（`src/app/manifest.ts`、アイコンは `src/app/apple-icon.tsx`）。
-  アイコンとマニフェストはログイン前でも取得できるよう、`src/middleware.ts` の対象から外している。
+- iPhone の Safari で「ホーム画面に追加」すると、アドレスバーの無いアプリのように開く（`src/app/manifest.ts`）。
+  アイコンは `public/` の画像ファイル（`apple-touch-icon.png` ほか。元の絵は `public/icon.svg`）。
+  マニフェストはログイン前でも取得できるよう、`src/middleware.ts` の対象から外している。
 
 ## 9. 制約と未対応
 

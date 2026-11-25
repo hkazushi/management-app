@@ -29,6 +29,11 @@ export const metadata: Metadata = {
   description: "2人で使う、予定・欲しいもの・お金の手帖",
   // iPhone の「ホーム画面に追加」で、アドレスバーの無いアプリのように開く
   appleWebApp: { capable: true, title: "ふたり手帖", statusBarStyle: "default" },
+  // アイコンは public/ の画像ファイル。iPhone は /apple-touch-icon.png を決まった場所として探しに来る
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
