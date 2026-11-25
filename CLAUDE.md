@@ -50,6 +50,7 @@
 | `0008_home.sql` | ふたり手帖のテーブル全部と `is_member()` |
 | `0009_one_offs.sql` | 単発のお金（`one_offs`）。本人の行だけ |
 | `0010_calendar_feed.sql` | カレンダーの外部公開（`calendar_feeds` と関数 `calendar_feed`） |
+| `0011_external_events.sql` | TimeTree から読み取った予定（`external_events`）。画面からは読むだけ |
 
 新しい SQL を追加するときは、既存ファイルを書き換えず**連番で追加**する。
 
@@ -102,7 +103,10 @@
   マニフェストのように、ログイン前に端末が取りに来るものは matcher から外す。
 - **TimeTree には、外から予定を読み書きする公式の手段が無い**（2026-11 調べ）。
   公式 API（Connect App）は 2023-12-22 に終了。このアプリ → TimeTree は、iCal で公開して iPhone のカレンダー経由で
-  TimeTree の「外部カレンダーの表示」に出す形にしている（`/api/ical/<token>.ics`）。TimeTree → このアプリは未対応。
+  TimeTree の「外部カレンダーの表示」に出す形にしている（`/api/ical/<token>.ics`）。
+  TimeTree → このアプリは、このMacの `tools/timetree-sync.mjs` が非公式に読み取る（spec.md 7.1）。直したら `cp tools/timetree-sync.mjs ~/bin/timetree-sync`。
 - **iPhone のホーム画面のアイコンは、`public/apple-touch-icon.png` に画像ファイルとして置く**（2026-11）。
   Next の `app/apple-icon.tsx`（動的に生成）にしたら、ホーム画面に追加したとき灰色の「ふ」（アイコンが取れないときの代用表示）になった。
   アイコンを変えたあとは、ホーム画面のアイコンをいったん消して追加し直さないと古いままになる。
+- **`new URL(import.meta.url).pathname` は、日本語のパスが `%E3%82…` に化ける**（2026-11）。
+  このリポジトリはフォルダ名が日本語なので、そのまま `fs` に渡すと ENOENT になる。`fileURLToPath(import.meta.url)` を使う。

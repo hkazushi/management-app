@@ -10,7 +10,7 @@ import { addDays, diffDays, fmtDay, fmtDayLong, fmtTimeRange, todayJST, yen } fr
 import { getMembers, whoOf } from "@/lib/members";
 import { fixedLines, monthSummary, oneOffLine, statusLabel } from "@/lib/money";
 import { payFixed, setOneOffPaid } from "./money/actions";
-import type { EventRow, FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsGoal, Wish } from "@/types/database";
+import type { EventRow, ExternalEvent, FixedCost, FixedPayment, Income, IncomeActual, OneOff, SavingsGoal, Wish } from "@/types/database";
 
 // ホーム：今日からの予定、近い支払い、今月使えるお金、欲しいもの。お金まわりは自分の分だけが出る。
 export default async function HomePage() {
@@ -32,6 +32,7 @@ export default async function HomePage() {
     gRes,
     wRes,
     oRes,
+    xRes,
   ] = await Promise.all([
     getMembers(supabase),
     supabase.auth.getUser(),
@@ -59,9 +60,27 @@ export default async function HomePage() {
       .lte("date", addDays(`${month}-01`, 45))
       .or(`date.gte.${month}-01,paid_at.is.null`)
       .order("date", { ascending: true }),
+    // TimeTree から読み取った予定（テーブルがまだ無ければ空）
+    supabase.from("external_events").select("id,date,title,start_time,end_time,memo,calendar_name").gte("date", today).lte("date", weekEnd),
   ]);
 
-  const events = (eRes.data as unknown as EventRow[] | null) ?? [];
+  // TimeTree の予定も、色なし・「見るだけ」の印つきで同じ並びに入れる
+  type HomeEvent = EventRow & { external?: string };
+  const events: HomeEvent[] = [
+    ...((eRes.data as unknown as EventRow[] | null) ?? []),
+    ...((xRes.data as unknown as ExternalEvent[] | null) ?? []).map((x) => ({
+      id: `x-${x.id}`,
+      date: x.date,
+      title: x.title,
+      start_time: x.start_time,
+      end_time: x.end_time,
+      member_id: null,
+      color: "#A39F90",
+      memo: x.memo,
+      batch_id: null,
+      external: x.calendar_name ? `TimeTree・${x.calendar_name}` : "TimeTree",
+    })),
+  ];
   const lines = fixedLines(
     (cRes.data as unknown as FixedCost[] | null) ?? [],
     (pRes.data as unknown as FixedPayment[] | null) ?? [],
@@ -84,7 +103,7 @@ export default async function HomePage() {
   const urgent = lines.filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
   const hasMoney = lines.length > 0 || incomes.length > 0 || goals.length > 0 || oneOffs.length > 0;
 
-  const byDate = new Map<string, EventRow[]>();
+  const byDate = new Map<string, HomeEvent[]>();
   for (const e of events) byDate.set(e.date, [...(byDate.get(e.date) ?? []), e]);
   for (const list of byDate.values()) list.sort((a, b) => (a.start_time ?? "99").localeCompare(b.start_time ?? "99"));
   const todays = byDate.get(today) ?? [];
@@ -102,7 +121,7 @@ export default async function HomePage() {
           : urgent.length + urgentOneOffs.length > 0
             ? `もうすぐ支払いが${urgent.length + urgentOneOffs.length}件あります`
             : "今日はのんびりできそうです";
-  const colorOf = (e: EventRow) => e.color ?? (e.member_id ? whoOf(members, e.member_id).color : DEFAULT_COLOR);
+  const colorOf = (e: HomeEvent) => e.color ?? (e.member_id ? whoOf(members, e.member_id).color : DEFAULT_COLOR);
   const dayWord = (d: string) => (diffDays(d, today) === 1 ? "あした" : fmtDay(d));
 
   return (
@@ -145,7 +164,7 @@ export default async function HomePage() {
                   <p className="text-[15px] font-bold leading-snug">{e.title}</p>
                   <p className="mt-0.5 flex flex-wrap gap-x-2 text-xs text-muted">
                     {e.start_time && <span>{fmtTimeRange(e.start_time, e.end_time)}</span>}
-                    <span>{whoOf(members, e.member_id).name}</span>
+                    <span>{e.external ?? whoOf(members, e.member_id).name}</span>
                     {e.memo && <span>{e.memo}</span>}
                   </p>
                 </div>
