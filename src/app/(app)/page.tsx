@@ -68,7 +68,9 @@ export default async function HomePage() {
   type HomeEvent = EventRow & { external?: string };
   const events: HomeEvent[] = [
     ...((eRes.data as unknown as EventRow[] | null) ?? []),
-    ...((xRes.data as unknown as ExternalEvent[] | null) ?? []).map((x) => ({
+    ...((xRes.data as unknown as ExternalEvent[] | null) ?? [])
+      .filter((x) => !x.delete_requested_at)
+      .map((x) => ({
       id: `x-${x.id}`,
       date: x.date,
       title: x.title,

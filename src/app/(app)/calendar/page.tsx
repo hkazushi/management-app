@@ -28,7 +28,8 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     // TimeTree から読み取った予定（テーブルがまだ無ければ空）
     supabase.from("external_events").select("*").gte("date", from).lte("date", to),
   ]);
-  const externals = (xRes.data as unknown as ExternalEvent[] | null) ?? [];
+  // 「消す」と頼んだものは、TimeTree から消えるのを待たずに画面から外す
+  const externals = ((xRes.data as unknown as ExternalEvent[] | null) ?? []).filter((x) => !x.delete_requested_at);
   const events = (eRes.data as unknown as EventRow[] | null) ?? [];
   const presets = (pRes.data as unknown as EventPreset[] | null) ?? [];
   const costs = (cRes.data as unknown as FixedCost[] | null) ?? [];

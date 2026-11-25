@@ -47,24 +47,17 @@ function WishFields({ members, wish, compact = false }: { members: Member[]; wis
 }
 
 // 欲しいものリスト：手で足す。リンクも一緒に載せられる。買ったらチェック。
-// 値段の区切り（上限は「未満」）
-const PRICE_RANGES = [
-  { key: "a", label: "〜1万円", min: 0, max: 10000 },
-  { key: "b", label: "1〜3万円", min: 10000, max: 30000 },
-  { key: "c", label: "3〜10万円", min: 30000, max: 100000 },
-  { key: "d", label: "10万円〜", min: 100000, max: Infinity },
-] as const;
 const SORTS = [
   { key: "", label: "新しい順" },
   { key: "cheap", label: "安い順" },
   { key: "high", label: "高い順" },
 ] as const;
 
-// ?who=（人）・?price=（値段）・?sort=（並び）で、まだ買っていないものを絞り込む
+// ?who=（人）で絞り込み、?sort=（並び）で並べ替える
 export default async function WishesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ who?: string; price?: string; sort?: string }>;
+  searchParams: Promise<{ who?: string; sort?: string }>;
 }) {
   const sp = await searchParams;
   const supabase = await createClient();
@@ -81,13 +74,9 @@ export default async function WishesPage({
 
   // 絞り込みの条件。知らない値は「ぜんぶ」として扱う
   const who = sp.who === "shared" || members.some((m) => m.user_id === sp.who) ? (sp.who as string) : "";
-  const range = PRICE_RANGES.find((r) => r.key === sp.price);
-  const noPrice = sp.price === "none";
   const sort = SORTS.some((x) => x.key === sp.sort) ? (sp.sort as string) : "";
   const filtered = allOpen.filter((w) => {
     if (who === "shared" ? w.member_id !== null : who && w.member_id !== who) return false;
-    if (noPrice) return w.price === null;
-    if (range) return w.price !== null && w.price >= range.min && w.price < range.max;
     return true;
   });
   // 値段で並べるとき、値段の無いものは最後に回す
@@ -98,11 +87,11 @@ export default async function WishesPage({
       })
     : filtered;
   const total = open.reduce((n, w) => n + (w.price ?? 0), 0);
-  const filtering = !!who || !!range || noPrice;
+  const filtering = !!who;
 
   // いまの条件を保ったまま、1つだけ変えたリンクを作る
-  const href = (next: { who?: string; price?: string; sort?: string }) => {
-    const q = { who, price: noPrice ? "none" : (range?.key ?? ""), sort, ...next };
+  const href = (next: { who?: string; sort?: string }) => {
+    const q = { who, sort, ...next };
     const qs = Object.entries(q)
       .filter(([, v]) => v)
       .map(([k, v]) => `${k}=${v}`)
@@ -160,20 +149,6 @@ export default async function WishesPage({
                   {o.label}
                 </Link>
               ))}
-            </div>
-            <div className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
-              <span className="shrink-0 self-center text-[11px] font-bold text-muted">値段</span>
-              <Link href={href({ price: "" })} className={chip(!range && !noPrice)} scroll={false}>
-                ぜんぶ
-              </Link>
-              {PRICE_RANGES.map((r) => (
-                <Link key={r.key} href={href({ price: r.key })} className={chip(range?.key === r.key)} scroll={false}>
-                  {r.label}
-                </Link>
-              ))}
-              <Link href={href({ price: "none" })} className={chip(noPrice)} scroll={false}>
-                値段なし
-              </Link>
             </div>
             <div className="-mx-3.5 flex gap-1.5 overflow-x-auto px-3.5 pb-0.5 sm:mx-0 sm:flex-wrap sm:px-0">
               <span className="shrink-0 self-center text-[11px] font-bold text-muted">並び</span>

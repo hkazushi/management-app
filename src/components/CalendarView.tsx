@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
-import { addEvents, deleteBatch, deleteEvent, updateEvent, type EventInput } from "@/app/(app)/calendar/actions";
+import {
+  addEvents,
+  deleteBatch,
+  deleteEvent,
+  requestExternalDelete,
+  updateEvent,
+  type EventInput,
+} from "@/app/(app)/calendar/actions";
 import { DEFAULT_COLOR, PALETTE, onColor } from "@/lib/colors";
 import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, weekdayOf, yen } from "@/lib/format";
 import { cheer } from "@/lib/cheer";
@@ -369,6 +376,36 @@ export function CalendarView({
                   {e.memo && <span>{e.memo}</span>}
                 </p>
               </div>
+              {e.recurring ? (
+                <span className="flex shrink-0 items-center pr-3 text-[10px] leading-tight text-faint">
+                  くり返しは
+                  <br />
+                  TimeTreeで
+                </span>
+              ) : (
+                <button
+                  type="button"
+                  aria-label="この予定を TimeTree からも消す"
+                  disabled={pending}
+                  onClick={() => {
+                    if (
+                      !window.confirm(
+                        `「${e.title}」を消しますか？\n\nTimeTree「${e.calendar_name ?? ""}」からも消え、そのカレンダーを見ている全員の画面から無くなります（TimeTree 側は最大30分後）。`,
+                      )
+                    )
+                      return;
+                    setError("");
+                    start(async () => {
+                      const res = await requestExternalDelete(e.id);
+                      if (res.error) return setError(res.error);
+                      cheer("消しました");
+                    });
+                  }}
+                  className="flex shrink-0 items-center px-3 text-faint hover:text-danger"
+                >
+                  <Icon name="trash" size={16} />
+                </button>
+              )}
             </li>
           ))}
         </ul>

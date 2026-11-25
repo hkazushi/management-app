@@ -74,3 +74,22 @@ export async function deleteBatch(batchId: string) {
   await supabase.from("events").delete().eq("batch_id", batchId);
   revalidatePath("/", "layout");
 }
+
+// TimeTree から読み取った予定を「消して」と頼む。
+// ここでは印を付けるだけで、実際に TimeTree から消すのは Mac の同期スクリプト（最大30分後）。
+// 何日かにまたがる予定は、同じ予定の全部の日に印を付ける。
+export async function requestExternalDelete(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient();
+  const { data } = await supabase.from("external_events").select("uid").eq("id", id).maybeSingle();
+  const uid = (data as unknown as { uid: string } | null)?.uid;
+  if (!uid) return { error: "予定が見つかりません" };
+  const { data: updated, error } = await supabase
+    .from("external_events")
+    .update({ delete_requested_at: new Date().toISOString() })
+    .like("uid", `${uid.split(":")[0]}:%`)
+    .select("id");
+  // 列や権限（0014）がまだ無いと、エラーになるか、1行も変わらない
+  if (error || !updated || updated.length === 0) return { error: "まだ消せません（データベースの準備が必要です）" };
+  revalidatePath("/", "layout");
+  return {};
+}
