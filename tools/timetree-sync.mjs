@@ -17,6 +17,8 @@
 //   ~/.config/futari-techo/timetree.env  （自分で作る。chmod 600）
 //       TIMETREE_EMAIL=...
 //       TIMETREE_PASSWORD=...
+//       TIMETREE_SESSION=...            ← Apple / Google でサインインしていてパスワードが無い場合は、こちらだけ書く。
+//                                         ブラウザで TimeTree にログインした状態の Cookie「_session_id」の値
 //       TIMETREE_CALENDAR=家族          ← 読み取るカレンダーの名前（一部でも可。カンマ区切りで複数）
 //       TIMETREE_SHARED=false           ← true にすると、ふたり手帖のもう1人にも見える
 //   ~/.claude/hooks/management-app.env   （既存。SUPABASE_URL / SUPABASE_SERVICE_KEY / MANAGEMENT_USER_ID）
@@ -114,6 +116,15 @@ async function withSession(conf, fn) {
       return await fn(saved);
     } catch (e) {
       if (!e.expired) throw e;
+    }
+  }
+  // パスワードが無い（Apple / Google でサインイン）ときは、ブラウザから写したセッションを使う
+  if (conf.TIMETREE_SESSION) {
+    try {
+      return await fn(conf.TIMETREE_SESSION);
+    } catch (e) {
+      if (!e.expired) throw e;
+      throw new Error("TimeTree のセッションが切れています。ブラウザで TimeTree にログインし直して、設定ファイルの TIMETREE_SESSION を新しい値に書き換えてください");
     }
   }
   const sessionId = await login(conf.TIMETREE_EMAIL, conf.TIMETREE_PASSWORD);
@@ -264,8 +275,8 @@ async function main() {
   const dry = process.argv.includes("--dry");
   const conf = loadEnv(CONF_FILE);
   const app = loadEnv(APP_ENV);
-  if (!conf.TIMETREE_EMAIL || !conf.TIMETREE_PASSWORD) {
-    throw new Error(`設定ファイルに TIMETREE_EMAIL と TIMETREE_PASSWORD を書いてください: ${CONF_FILE}`);
+  if (!conf.TIMETREE_SESSION && (!conf.TIMETREE_EMAIL || !conf.TIMETREE_PASSWORD)) {
+    throw new Error(`設定ファイルに TIMETREE_EMAIL と TIMETREE_PASSWORD（または TIMETREE_SESSION）を書いてください: ${CONF_FILE}`);
   }
 
   const calendars = await withSession(conf, (sid) => tt(sid, "calendars?since=0").then((r) => r.calendars ?? []));
