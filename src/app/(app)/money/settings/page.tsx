@@ -83,7 +83,7 @@ export default async function MoneySettingsPage() {
   const goals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
 
   return (
-    <section className="space-y-6">
+    <section className="stagger space-y-6">
       <Link href="/money" className="inline-flex items-center gap-1 text-sm font-bold text-ink">
         <Icon name="left" size={16} />
         お金にもどる
@@ -102,7 +102,7 @@ export default async function MoneySettingsPage() {
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・消す</summary>
-                <ActionForm action={updateIncome.bind(null, i.id)} keep className="mt-2 space-y-2">
+                <ActionForm action={updateIncome.bind(null, i.id)} keep cheer="保存しました" className="mt-2 space-y-2">
                   <IncomeFields income={i} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
@@ -117,7 +117,7 @@ export default async function MoneySettingsPage() {
             </li>
           ))}
         </ul>
-        <ActionForm action={addIncome} className="card space-y-2 p-4">
+        <ActionForm action={addIncome} cheer="収入を入れました" className="card space-y-2 p-4">
           <IncomeFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />
@@ -144,7 +144,7 @@ export default async function MoneySettingsPage() {
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・止める・消す</summary>
-                <ActionForm action={updateFixed.bind(null, c.id)} keep className="mt-2 space-y-2">
+                <ActionForm action={updateFixed.bind(null, c.id)} keep cheer="保存しました" className="mt-2 space-y-2">
                   <FixedFields cost={c} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
@@ -166,7 +166,7 @@ export default async function MoneySettingsPage() {
             </li>
           ))}
         </ul>
-        <ActionForm action={addFixed} className="card space-y-2 p-4">
+        <ActionForm action={addFixed} cheer="固定費を入れました" className="card space-y-2 p-4">
           <FixedFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />
@@ -192,7 +192,7 @@ export default async function MoneySettingsPage() {
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・消す</summary>
-                <ActionForm action={updateGoal.bind(null, g.id)} keep className="mt-2 space-y-2">
+                <ActionForm action={updateGoal.bind(null, g.id)} keep cheer="保存しました" className="mt-2 space-y-2">
                   <GoalFields goal={g} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
@@ -207,7 +207,7 @@ export default async function MoneySettingsPage() {
             </li>
           ))}
         </ul>
-        <ActionForm action={addGoal} className="card space-y-2 p-4">
+        <ActionForm action={addGoal} cheer="目標を入れました" className="card space-y-2 p-4">
           <GoalFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />

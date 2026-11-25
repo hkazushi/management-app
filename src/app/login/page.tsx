@@ -15,9 +15,12 @@ export default function LoginPage() {
     <main className="flex min-h-dvh items-center justify-center px-6">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <div className="flex items-end justify-center gap-1 drop-shadow-[0_14px_14px_rgb(40_32_16/0.18)]">
-            <Manul className="h-[104px] w-auto" />
-            <Meerkat className="h-40 w-auto" />
+          <p className="pop-in mb-2 rounded-2xl rounded-br-sm border border-sun bg-primary-deep px-4 py-1.5 text-xs font-bold text-[#FAF4E4] [animation-delay:0.5s]">
+            おかえりなさい。あいことばをどうぞ
+          </p>
+          <div className="flex items-end justify-center gap-2 drop-shadow-[0_14px_14px_rgb(40_32_16/0.18)]">
+            <Manul className="mascot-breathe h-[128px] w-auto" />
+            <Meerkat className="mascot-breathe h-[190px] w-auto [animation-delay:0.6s]" />
           </div>
           <p className="mt-3 font-display text-[11px] font-bold uppercase tracking-[0.36em] text-sun">Futari Techo</p>
           <h1 className="display mt-1 text-[34px] leading-tight text-ink">ふたり手帖</h1>

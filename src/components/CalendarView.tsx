@@ -5,6 +5,7 @@ import { useMemo, useRef, useState, useTransition } from "react";
 import { addEvents, deleteBatch, deleteEvent, updateEvent, type EventInput } from "@/app/(app)/calendar/actions";
 import { DEFAULT_COLOR, PALETTE, onColor } from "@/lib/colors";
 import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, weekdayOf, yen } from "@/lib/format";
+import { cheer } from "@/lib/cheer";
 import { whoOf } from "@/lib/members";
 import { WhoSelect } from "./Fields";
 import { Icon } from "./Icon";
@@ -133,6 +134,7 @@ export function CalendarView({
       const res = await addEvents(selected, input);
       if (res.error) return setError(res.error);
       after?.();
+      cheer(selected.length > 1 ? `${selected.length}日ぶん、入れました` : "予定を入れました");
       if (multi) {
         setMulti(false);
         setSelected([selected[0]]);
@@ -281,6 +283,7 @@ export function CalendarView({
               </div>
               {editing === e.id && (
                 <form
+                  method="post"
                   onSubmit={(ev) => {
                     ev.preventDefault();
                     const input = inputOf(new FormData(ev.currentTarget));
@@ -289,6 +292,7 @@ export function CalendarView({
                       const res = await updateEvent(e.id, input);
                       if (res.error) return setError(res.error);
                       setEditing(null);
+                      cheer("直しました");
                     });
                   }}
                   className="space-y-3 border-t border-line bg-bg/60 p-3.5"
@@ -384,6 +388,7 @@ export function CalendarView({
         {/* 自由に入力：名前だけでも入る */}
         <form
           ref={formRef}
+          method="post"
           onSubmit={(ev) => {
             ev.preventDefault();
             add(inputOf(new FormData(ev.currentTarget)), () => formRef.current?.reset());

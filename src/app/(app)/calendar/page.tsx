@@ -40,7 +40,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     "flex h-9 w-9 items-center justify-center rounded-full border border-sun/50 bg-[#FAF4E4]/10 text-[#FAF4E4] active:scale-95";
 
   return (
-    <section className="space-y-4">
+    <section className="stagger space-y-4">
       <PageTitle title={fmtMonth(month)} label="CALENDAR" tone="bg-accent text-[#FAF4E4]">
         <div className="flex shrink-0 items-center gap-1.5">
           <Link href={`/calendar?m=${shiftMonth(month, -1)}`} aria-label="前の月" className={navBtn}>

@@ -28,13 +28,13 @@ export default async function SettingsPage() {
   const other = members.find((m) => m.user_id !== user?.id);
 
   return (
-    <section className="space-y-6">
+    <section className="stagger space-y-6">
       <PageTitle title="設定" label="SETTINGS" tone="bg-ink text-[#FAF4E4]" />
 
       <div className="space-y-3">
         <SectionTitle tone="bg-primary">じぶん</SectionTitle>
         {me ? (
-          <ActionForm action={updateMe} keep className="card space-y-3 p-4">
+          <ActionForm action={updateMe} keep cheer="保存しました" className="card space-y-3 p-4">
             <label className="block text-[11px] font-bold text-muted">
               名前（予定や支払いに出ます）
               <input name="name" required maxLength={12} defaultValue={me.name} className="input mt-0.5" />
@@ -87,7 +87,7 @@ export default async function SettingsPage() {
             })}
           </ul>
         )}
-        <ActionForm action={addPreset} className="card space-y-3 p-4">
+        <ActionForm action={addPreset} cheer="よく使う予定に入れました" className="card space-y-3 p-4">
           <input name="title" required placeholder="予定の名前（仕事・デート・ジムなど）" className="input" />
           <div className="grid grid-cols-2 gap-2">
             <label className="text-[11px] font-bold text-muted">

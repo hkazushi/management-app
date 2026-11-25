@@ -67,7 +67,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
     "flex h-9 w-9 items-center justify-center rounded-full border border-sun/50 bg-[#FAF4E4]/10 text-[#FAF4E4] active:scale-95";
 
   return (
-    <section className="space-y-5">
+    <section className="stagger space-y-5">
       <PageTitle title={fmtMonth(month)} label="MONEY" tone="bg-primary text-[#FAF4E4]">
         <div className="flex shrink-0 items-center gap-1.5">
           <Link href={`/money?m=${shiftMonth(month, -1)}`} aria-label="前の月" className={navBtn}>
@@ -266,7 +266,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
                       )}
                       <details className="mt-2">
                         <summary className="cursor-pointer text-[11px] font-bold text-muted">金額を入れる・履歴</summary>
-                        <ActionForm action={addSaving.bind(null, g.id)} className="mt-2 grid grid-cols-[1fr_6.5rem] gap-2">
+                        <ActionForm action={addSaving.bind(null, g.id)} cheer="記録しました" className="mt-2 grid grid-cols-[1fr_6.5rem] gap-2">
                           <input name="amount" required inputMode="numeric" placeholder="金額" className="input" />
                           <select name="mode" defaultValue="in" aria-label="入金か引き出しか" className="input">
                             <option value="in">入れた</option>

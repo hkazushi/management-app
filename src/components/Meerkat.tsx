@@ -1,5 +1,6 @@
 // アプリの案内役のミーアキャット。金の蝶ネクタイをしている。
 // stand: 立って見張っている全身 / peek: 縁から顔と手だけ出している
+// まばたき・首かしげ・しっぽの動きは globals.css の .mascot-* で付けている。
 const FUR = "#C9A57A";
 const FUR_DARK = "#A9865C";
 const BELLY = "#F0E2C6";
@@ -9,6 +10,7 @@ const GOLD = "#C9A862";
 function Head({ cx, cy }: { cx: number; cy: number }) {
   return (
     <g transform={`translate(${cx} ${cy})`}>
+      <g className="mascot-tilt">
       {/* 耳 */}
       <ellipse cx="-21" cy="-9" rx="6" ry="5" fill={PATCH} />
       <ellipse cx="21" cy="-9" rx="6" ry="5" fill={PATCH} />
@@ -19,14 +21,17 @@ function Head({ cx, cy }: { cx: number; cy: number }) {
       {/* 目のまわりの黒い模様 */}
       <ellipse cx="-11" cy="-3" rx="7.5" ry="6" fill={PATCH} transform="rotate(-18 -11 -3)" />
       <ellipse cx="11" cy="-3" rx="7.5" ry="6" fill={PATCH} transform="rotate(18 11 -3)" />
-      {/* 目 */}
-      <circle cx="-10.5" cy="-3" r="3" fill="#120D0A" />
-      <circle cx="10.5" cy="-3" r="3" fill="#120D0A" />
-      <circle cx="-9.4" cy="-4.2" r="1" fill="#FFFDF8" />
-      <circle cx="11.6" cy="-4.2" r="1" fill="#FFFDF8" />
+      {/* 目（まばたきする） */}
+      <g className="mascot-blink">
+        <circle cx="-10.5" cy="-3" r="3" fill="#120D0A" />
+        <circle cx="10.5" cy="-3" r="3" fill="#120D0A" />
+        <circle cx="-9.4" cy="-4.2" r="1" fill="#FFFDF8" />
+        <circle cx="11.6" cy="-4.2" r="1" fill="#FFFDF8" />
+      </g>
       {/* 鼻と口 */}
       <path d="M-3.6 9.5c0-2 1.6-3 3.6-3s3.6 1 3.6 3c0 1.8-2 3.2-3.6 3.2S-3.6 11.3-3.6 9.5Z" fill={PATCH} />
       <path d="M0 12.5v3M0 15.5c-1.5 1.8-3.5 1.8-4.8.6M0 15.5c1.5 1.8 3.5 1.8 4.8.6" fill="none" stroke={PATCH} strokeWidth="1.1" strokeLinecap="round" />
+      </g>
     </g>
   );
 }
@@ -60,9 +65,11 @@ export function Meerkat({
   }
   return (
     <svg viewBox="0 0 120 200" className={className} aria-hidden="true">
-      {/* しっぽ */}
-      <path d="M78 168c14 2 26-2 30-14" fill="none" stroke={FUR_DARK} strokeWidth="7" strokeLinecap="round" />
-      <path d="M103 160c2-2 4-4 5-6" fill="none" stroke={PATCH} strokeWidth="7" strokeLinecap="round" />
+      {/* しっぽ（ゆれる） */}
+      <g className="mascot-tail">
+        <path d="M78 168c14 2 26-2 30-14" fill="none" stroke={FUR_DARK} strokeWidth="7" strokeLinecap="round" />
+        <path d="M103 160c2-2 4-4 5-6" fill="none" stroke={PATCH} strokeWidth="7" strokeLinecap="round" />
+      </g>
       {/* 足 */}
       <ellipse cx="48" cy="187" rx="11" ry="6" fill={FUR_DARK} />
       <ellipse cx="72" cy="187" rx="11" ry="6" fill={FUR_DARK} />

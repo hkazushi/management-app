@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/ActionForm";
 import { WhoChip, WhoSelect } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
+import { Manul } from "@/components/Manul";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { yen } from "@/lib/format";
 import { getMembers } from "@/lib/members";
@@ -60,7 +61,7 @@ export default async function WishesPage() {
   const total = open.reduce((n, w) => n + (w.price ?? 0), 0);
 
   return (
-    <section className="space-y-5">
+    <section className="stagger space-y-5">
       <PageTitle title="欲しいもの" label="WISH LIST" tone="bg-wine text-[#FAF4E4]" mascot="manul">
         {total > 0 && (
           <p className="shrink-0 text-right text-[11px] font-bold leading-tight text-[#FAF4E4]/80">
@@ -76,7 +77,7 @@ export default async function WishesPage() {
         </p>
       )}
 
-      <ActionForm action={addWish} className="card scroll-mt-20 space-y-2 p-4">
+      <ActionForm action={addWish} cheer="リストに入れました" className="card scroll-mt-20 space-y-2 p-4">
         <span id="add" />
         <WishFields members={members} compact />
         <button type="submit" className="btn-primary w-full !py-3">
@@ -88,9 +89,10 @@ export default async function WishesPage() {
       <div className="space-y-3">
         <SectionTitle tone="bg-pink">まだ買ってない（{open.length}）</SectionTitle>
         {open.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-line px-3 py-6 text-center text-sm font-bold text-muted">
-            欲しいものを上から足してみてください
-          </p>
+          <div className="flex flex-col items-center gap-2 rounded-2xl border border-dashed border-line px-3 py-6 text-center">
+            <Manul className="h-24 w-auto" />
+            <p className="text-sm text-muted">欲しいものを、上から教えてください</p>
+          </div>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
             {open.map((w, i) => (

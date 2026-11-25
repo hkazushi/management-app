@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { AppNav } from "@/components/AppNav";
 import { Icon } from "@/components/Icon";
+import { Cheer } from "@/components/Cheer";
+import { MascotScene } from "@/components/MascotScene";
 import { Meerkat } from "@/components/Meerkat";
 import { logout } from "./actions";
 
@@ -12,7 +14,7 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh pb-28">
+    <div className="min-h-dvh overflow-x-clip pb-28">
       <header className="sticky top-0 z-20 border-b border-line bg-bg/95 backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2.5">
@@ -43,7 +45,12 @@ export default function AppLayout({
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-3xl px-4 py-5">{children}</main>
+      <main className="mx-auto w-full max-w-3xl px-4 py-5">
+        {children}
+        <MascotScene />
+      </main>
+
+      <Cheer />
 
       <AppNav />
     </div>

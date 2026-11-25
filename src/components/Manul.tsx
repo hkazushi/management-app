@@ -10,6 +10,7 @@ const EYE = "#D9C25A";
 function Face({ cx, cy }: { cx: number; cy: number }) {
   return (
     <g transform={`translate(${cx} ${cy})`}>
+      <g className="mascot-tilt mascot-slow">
       {/* 耳（低く、横に離れている） */}
       <path d="M-40-12c-8-10-9-19-4-24 8 0 15 5 19 13Z" fill={FUR_DARK} />
       <path d="M40-12c8-10 9-19 4-24-8 0-15 5-19 13Z" fill={FUR_DARK} />
@@ -35,18 +36,21 @@ function Face({ cx, cy }: { cx: number; cy: number }) {
       {/* ほおの縞 */}
       <path d="M-27 3c-6 1-11 4-15 8M-25 9c-5 2-9 5-12 9M27 3c6 1 11 4 15 8M25 9c5 2 9 5 12 9" fill="none" stroke={STRIPE} strokeWidth="2" strokeLinecap="round" />
       {/* 目（丸い瞳）と、むすっとした上まぶた */}
-      <circle cx="-15" cy="-3" r="7" fill={EYE} />
-      <circle cx="15" cy="-3" r="7" fill={EYE} />
-      <circle cx="-15" cy="-3" r="3" fill="#15110D" />
-      <circle cx="15" cy="-3" r="3" fill="#15110D" />
-      <circle cx="-13.8" cy="-4.4" r="1" fill="#FFFDF8" />
-      <circle cx="16.2" cy="-4.4" r="1" fill="#FFFDF8" />
+      <g className="mascot-blink mascot-slow">
+        <circle cx="-15" cy="-3" r="7" fill={EYE} />
+        <circle cx="15" cy="-3" r="7" fill={EYE} />
+        <circle cx="-15" cy="-3" r="3" fill="#15110D" />
+        <circle cx="15" cy="-3" r="3" fill="#15110D" />
+        <circle cx="-13.8" cy="-4.4" r="1" fill="#FFFDF8" />
+        <circle cx="16.2" cy="-4.4" r="1" fill="#FFFDF8" />
+      </g>
       <path d="M-24-8c5-4 13-4 18 0M24-8c-5-4-13-4-18 0" fill="none" stroke={STRIPE} strokeWidth="2.4" strokeLinecap="round" />
       {/* 鼻と口（への字） */}
       <path d="M-4 6h8l-4 4.5Z" fill="#B0756A" />
       <path d="M0 10.5v3M0 13.5c-2 2.5-5.5 3-8 1.5M0 13.5c2 2.5 5.5 3 8 1.5" fill="none" stroke={STRIPE} strokeWidth="1.3" strokeLinecap="round" />
       {/* ひげ */}
       <path d="M-12 12-30 10M-12 15-29 17M12 12 30 10M12 15 29 17" stroke="#FFFDF8" strokeWidth="0.9" strokeLinecap="round" opacity="0.9" />
+      </g>
     </g>
   );
 }
@@ -70,9 +74,11 @@ export function Manul({
   return (
     <svg viewBox="0 0 160 170" className={className} aria-hidden="true">
       {/* しっぽ（太くて輪の模様） */}
-      <path d="M112 142c22 6 38-4 36-22" fill="none" stroke={FUR} strokeWidth="18" strokeLinecap="round" />
-      <path d="M128 143l3-17M141 136l-8-14" stroke={STRIPE} strokeWidth="4" strokeLinecap="round" />
-      <path d="M146 122c1-3 1-6 0-8" fill="none" stroke={STRIPE} strokeWidth="18" strokeLinecap="round" />
+      <g className="mascot-tail mascot-slow">
+        <path d="M112 142c22 6 38-4 36-22" fill="none" stroke={FUR} strokeWidth="18" strokeLinecap="round" />
+        <path d="M128 143l3-17M141 136l-8-14" stroke={STRIPE} strokeWidth="4" strokeLinecap="round" />
+        <path d="M146 122c1-3 1-6 0-8" fill="none" stroke={STRIPE} strokeWidth="18" strokeLinecap="round" />
+      </g>
       {/* 体（ずんぐり） */}
       <path d="M80 62c-34 0-52 24-52 56 0 26 18 44 52 44s52-18 52-44c0-32-18-56-52-56Z" fill={FUR} />
       {/* わき腹の縞 */}

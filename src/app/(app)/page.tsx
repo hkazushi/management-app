@@ -76,11 +76,24 @@ export default async function HomePage() {
   for (const list of byDate.values()) list.sort((a, b) => (a.start_time ?? "99").localeCompare(b.start_time ?? "99"));
   const todays = byDate.get(today) ?? [];
   const later = [...byDate.entries()].filter(([d]) => d !== today);
+  // 2匹のふきだし。急ぐものから順に
+  const overdue = lines.filter((l) => l.status === "overdue").length;
+  const dueToday = lines.filter((l) => l.status === "today").length;
+  const say =
+    overdue > 0
+      ? `支払いが${overdue}件すぎています`
+      : dueToday > 0
+        ? `今日までの支払いが${dueToday}件あります`
+        : todays.length > 0
+          ? `今日の予定は${todays.length}件です`
+          : urgent.length > 0
+            ? `もうすぐ支払いが${urgent.length}件あります`
+            : "今日はのんびりできそうです";
   const colorOf = (e: EventRow) => e.color ?? (e.member_id ? whoOf(members, e.member_id).color : DEFAULT_COLOR);
   const dayWord = (d: string) => (diffDays(d, today) === 1 ? "あした" : fmtDay(d));
 
   return (
-    <section className="space-y-6">
+    <section className="stagger space-y-6">
       {eRes.error && (
         <p className="card bg-danger p-4 text-sm font-bold text-white">
           データベースの準備が終わっていません。Supabase の SQL Editor で supabase/migrations/0008_home.sql を実行してください。
@@ -95,16 +108,20 @@ export default async function HomePage() {
           ))}
         </svg>
         <span className="pointer-events-none absolute inset-[6px] rounded-[21px] border border-sun/40" aria-hidden="true" />
-        <Manul className="pointer-events-none absolute -bottom-2 right-[4.6rem] h-[84px] w-auto" />
-        <Meerkat className="pointer-events-none absolute -bottom-3 right-3 h-[128px] w-auto" />
+        <Manul className="mascot-breathe pointer-events-none absolute -bottom-2 right-[5.4rem] h-[100px] w-auto" />
+        <Meerkat className="mascot-breathe pointer-events-none absolute -bottom-3 right-2 h-[156px] w-auto [animation-delay:0.7s]" />
+        {/* 2匹からの一言（今日の状況で変わる） */}
+        <p className="pop-in absolute right-[5.5rem] top-4 max-w-[11.5rem] rounded-2xl rounded-br-sm border border-sun/70 bg-[#FAF4E4] px-3 py-1.5 text-[11px] font-bold leading-snug text-ink [animation-delay:0.6s]">
+          {say}
+        </p>
 
-        <div className="relative pr-36">
+        <div className="relative pr-36 pt-12">
           <span className="sticker text-sun">Today</span>
           <p className="display mt-2 text-[36px] leading-none">{fmtDayLong(today)}</p>
           <p className="mt-2 text-sm text-[#FAF4E4]/80">{me ? `${me.name}さん、おつかれさまです。` : "おつかれさまです。"}</p>
         </div>
 
-        <div className="relative mt-5 space-y-2 pr-36">
+        <div className="relative mt-5 space-y-2 pr-44">
           {todays.length === 0 ? (
             <p className="rounded-2xl bg-[#FAF4E4]/10 px-3.5 py-3 text-sm text-[#FAF4E4]/90">今日の予定はありません。</p>
           ) : (

@@ -103,6 +103,10 @@ RLS は2種類ある。
 - ページの見出しは深い色の面（カレンダー＝紺、欲しいもの＝ワイン、お金＝深緑、設定＝墨）に、金の同心円と内側の細線。
 - 案内役は**ミーアキャット**（`src/components/Meerkat.tsx`、金の蝶ネクタイ）と**マヌルネコ**（`src/components/Manul.tsx`）。
   ログイン画面とホームに2匹の全身、各ページの見出しの上と空の表示にどちらかの顔を出す。
+- 2匹は動く。まばたき・首かしげ・しっぽ（常時）、見出しの上にひょこっと出る、ホームで今日の状況を一言しゃべる、
+  追加・保存のあとに跳ねて一言出す（`src/lib/cheer.ts` → `src/components/Cheer.tsx`）、
+  各ページの下の舞台でミーアキャットが歩く（`src/components/MascotScene.tsx`）、読み込み中にのぞく。
+  動きの定義は `globals.css` の `.mascot-*`。「視差効果を減らす」設定の端末では動かさない。
 - 絵文字は使わない。
 - 色と部品の定義は `src/app/globals.css` と `tailwind.config.ts`、予定に付ける色の一覧は `src/lib/colors.ts`。
 

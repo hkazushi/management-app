@@ -16,13 +16,13 @@ export function PageTitle({
   children?: React.ReactNode; // 右側に置くもの（月の切り替えなど）
 }) {
   return (
-    <div className="relative pt-10">
+    <div className="relative overflow-y-clip pt-11">
       {mascot === "manul" ? (
-        <Manul variant="peek" className="absolute right-6 top-0 z-0 h-[58px] w-auto" />
+        <Manul variant="peek" className="mascot-peek absolute right-6 top-0 z-0 h-[64px] w-auto" />
       ) : (
-        <Meerkat variant="peek" className="absolute right-6 top-0 z-0 h-[58px] w-auto" />
+        <Meerkat variant="peek" className="mascot-peek absolute right-6 top-0 z-0 h-[64px] w-auto" />
       )}
-      <div className={`relative z-10 overflow-hidden rounded-[24px] px-5 pb-5 pt-5 shadow-hard-lg ${tone}`}>
+      <div className={`shine relative z-10 overflow-hidden rounded-[24px] px-5 pb-5 pt-5 shadow-hard-lg ${tone}`}>
         {/* 飾り：金の同心円 */}
         <svg className="pointer-events-none absolute -left-10 -top-12 h-44 w-44 text-sun opacity-40" viewBox="0 0 100 100" aria-hidden="true">
           {[18, 26, 34, 42, 50].map((r) => (
