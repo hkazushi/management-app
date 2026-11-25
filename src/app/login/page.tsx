@@ -12,19 +12,17 @@ export default function LoginPage() {
   return (
     <main className="flex min-h-dvh items-center justify-center px-6">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-white">
-            <Icon name="mic" size={26} />
+        <div className="mb-7 flex flex-col items-center text-center">
+          <span className="mb-4 flex h-20 w-20 -rotate-6 items-center justify-center rounded-3xl border-2 border-ink bg-sun text-ink shadow-hard">
+            <span className="display text-4xl leading-none">ふ</span>
           </span>
-          <h1 className="text-xl font-bold text-ink">議事録</h1>
-          <p className="mt-1 text-sm text-muted">
-            録音するだけで、議事録と宿題が残ります。
-          </p>
+          <h1 className="display text-3xl text-ink">ふたり手帖</h1>
+          <p className="mt-2 text-sm font-bold text-muted">予定・欲しいもの・お金を、ふたりで。</p>
         </div>
 
         <form action={formAction} className="card p-6">
-          <label htmlFor="pin" className="text-sm font-medium text-muted">
-            パスワード
+          <label htmlFor="pin" className="display text-sm text-ink">
+            あいことば
           </label>
           <input
             id="pin"
@@ -33,24 +31,17 @@ export default function LoginPage() {
             inputMode="numeric"
             autoComplete="off"
             autoFocus
-            className="input mt-2 text-center text-lg tracking-[0.4em]"
+            className="input mt-2 text-center !text-xl tracking-[0.4em]"
             placeholder="••••"
           />
 
-          {state.error && (
-            <p className="mt-3 text-sm text-danger">{state.error}</p>
-          )}
+          {state.error && <p className="mt-3 text-sm font-bold text-danger">{state.error}</p>}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="btn-primary mt-5 w-full"
-          >
-            {pending ? "確認中…" : "ロックを解除"}
+          <button type="submit" disabled={pending} className="btn-primary mt-5 w-full !py-3 !text-base">
+            <Icon name="lock" size={17} />
+            {pending ? "確認中…" : "ひらく"}
           </button>
         </form>
-
-        <p className="mt-4 text-center text-xs text-faint">自分専用アプリ</p>
       </div>
     </main>
   );

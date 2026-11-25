@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// warm / vibrant トーン。色の実体は globals.css の CSS 変数で定義する。
+// ポップな紙もの風。色の実体は globals.css の CSS 変数で定義する。
 const config: Config = {
   content: [
     "./src/app/**/*.{ts,tsx}",
@@ -20,6 +20,11 @@ const config: Config = {
         primary: "rgb(var(--primary) / <alpha-value>)",
         "primary-deep": "rgb(var(--primary-deep) / <alpha-value>)",
         accent: "rgb(var(--accent) / <alpha-value>)",
+        sun: "rgb(var(--sun) / <alpha-value>)",
+        mint: "rgb(var(--mint) / <alpha-value>)",
+        pink: "rgb(var(--pink) / <alpha-value>)",
+        lilac: "rgb(var(--lilac) / <alpha-value>)",
+        sky: "rgb(var(--sky) / <alpha-value>)",
         success: "rgb(var(--success) / <alpha-value>)",
         warning: "rgb(var(--warning) / <alpha-value>)",
         danger: "rgb(var(--danger) / <alpha-value>)",
@@ -29,20 +34,18 @@ const config: Config = {
         "2xl": "1.15rem",
         "3xl": "1.6rem",
       },
+      // 影はぼかさず、黒をずらして置く
       boxShadow: {
-        card: "0 1px 2px rgb(16 24 40 / 0.04), 0 4px 14px -6px rgb(16 24 40 / 0.10)",
-        pop: "0 12px 32px -10px rgb(16 24 40 / 0.18)",
-        glow: "0 6px 18px -6px rgb(var(--primary) / 0.35)",
+        card: "4px 4px 0 rgb(var(--ink))",
+        hard: "4px 4px 0 rgb(var(--ink))",
+        "hard-sm": "2px 2px 0 rgb(var(--ink))",
+        "hard-lg": "6px 6px 0 rgb(var(--ink))",
+        pop: "6px 6px 0 rgb(var(--ink))",
+        glow: "4px 4px 0 rgb(var(--ink))",
       },
       fontFamily: {
-        sans: [
-          "var(--font-inter)",
-          "Hiragino Kaku Gothic ProN",
-          "Hiragino Sans",
-          "Noto Sans JP",
-          "Meiryo",
-          "sans-serif",
-        ],
+        sans: ["var(--font-body)", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Noto Sans JP", "Meiryo", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-body)", "sans-serif"],
       },
     },
   },

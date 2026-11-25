@@ -1,0 +1,55 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { createClient } from "@/lib/supabase/server";
+import { isColor } from "@/lib/colors";
+import { isDate } from "@/lib/format";
+
+export type EventInput = {
+  title: string;
+  start_time: string; // "HH:MM" か空
+  end_time: string;
+  member_id: string; // 空は「2人」
+  color: string;
+  memo: string;
+};
+
+const time = (s: string) => (/^\d{2}:\d{2}/.test(s) ? s.slice(0, 5) : null);
+
+// 選んだ日すべてに同じ予定を入れる。2日以上なら batch_id でひとまとめにする
+export async function addEvents(dates: string[], input: EventInput): Promise<{ error?: string }> {
+  const title = input.title.trim();
+  const days = [...new Set(dates)].filter(isDate).slice(0, 62);
+  if (!title) return { error: "予定の名前を入れてください" };
+  if (days.length === 0) return { error: "日付を選んでください" };
+  const batch = days.length > 1 ? crypto.randomUUID() : null;
+  const supabase = await createClient();
+  const { error } = await supabase.from("events").insert(
+    days.map((date) => ({
+      date,
+      title,
+      start_time: time(input.start_time),
+      end_time: time(input.end_time),
+      member_id: input.member_id || null,
+      color: isColor(input.color) ? input.color : null,
+      memo: input.memo.trim() || null,
+      batch_id: batch,
+    })),
+  );
+  if (error) return { error: error.message };
+  revalidatePath("/", "layout");
+  return {};
+}
+
+export async function deleteEvent(id: string) {
+  const supabase = await createClient();
+  await supabase.from("events").delete().eq("id", id);
+  revalidatePath("/", "layout");
+}
+
+// まとめて入れた予定を、ほかの日の分も含めて全部消す
+export async function deleteBatch(batchId: string) {
+  const supabase = await createClient();
+  await supabase.from("events").delete().eq("batch_id", batchId);
+  revalidatePath("/", "layout");
+}

@@ -3,25 +3,31 @@
 @tailwind utilities;
 
 /*
-  ライト×ミニマル。白基調・余白広め・薄い境界＋ごく弱い影。装飾は最小限。
+  ポップな紙もの風。クリーム色の紙に、黒の太い線・ずらした影・原色の色面。
+  ぼかした影やグラデーションは使わない（のっぺりした「よくあるアプリ」に見えるため）。
   rgb 各チャンネルを空白区切りで定義し Tailwind の <alpha-value> と組み合わせる。
 */
 :root {
-  --bg: 247 248 250; /* やわらかいオフホワイト背景 */
-  --surface: 255 255 255; /* カード面（白） */
+  --bg: 255 244 224; /* クリーム色の紙 */
+  --surface: 255 255 255;
   --elevated: 255 255 255;
-  --border: 226 230 237; /* 薄いグレーの境界 */
-  --ink: 24 28 39; /* 主要テキスト */
-  --muted: 96 104 122; /* 補助テキスト */
-  --faint: 150 159 175;
+  --border: 20 18 15; /* 線は黒 */
+  --ink: 20 18 15;
+  --muted: 92 84 74;
+  --faint: 150 140 128;
 
-  --primary: 234 100 38; /* オレンジ（白地で読めるトーン） */
-  --primary-deep: 200 78 22;
-  --accent: 37 99 235; /* 青（最小限） */
+  --primary: 255 77 46; /* トマト */
+  --primary-deep: 220 52 24;
+  --accent: 43 75 255; /* コバルト */
+  --sun: 255 200 61; /* からし */
+  --mint: 25 195 154;
+  --pink: 255 143 199;
+  --lilac: 182 156 255;
+  --sky: 120 200 255;
 
-  --success: 22 150 100;
-  --warning: 190 128 20;
-  --danger: 220 64 64;
+  --success: 14 150 110;
+  --warning: 200 120 0;
+  --danger: 225 40 40;
 }
 
 html,
@@ -32,47 +38,88 @@ body {
 
 body {
   background-color: rgb(var(--bg));
+  /* 紙の上の細かい点 */
+  background-image: radial-gradient(rgb(var(--ink) / 0.09) 1px, transparent 1px);
+  background-size: 14px 14px;
   color: rgb(var(--ink));
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
+/* 選択中の文字もテーマ色に */
+::selection {
+  background: rgb(var(--sun));
+  color: rgb(var(--ink));
+}
+
 @layer components {
   .card {
-    @apply rounded-xl shadow-card;
+    border-radius: 18px;
     background: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
+    border: 2px solid rgb(var(--ink));
+    box-shadow: 4px 4px 0 rgb(var(--ink));
+  }
+  /* 押すと影の分だけ沈むボタン */
+  .btn-primary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-1.5 text-sm font-black transition-transform;
+    border-radius: 14px;
+    border: 2px solid rgb(var(--ink));
+    box-shadow: 3px 3px 0 rgb(var(--ink));
+    padding: 0.6rem 1rem;
   }
   .btn-primary {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-primary-deep active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60;
+    background: rgb(var(--primary));
+    color: #fff;
   }
   .btn-ghost {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2 text-sm font-medium text-ink transition;
     background: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
+    color: rgb(var(--ink));
   }
-  .btn-ghost:hover {
-    background: rgb(var(--bg));
-    border-color: rgb(var(--primary) / 0.4);
+  .btn-primary:active,
+  .btn-ghost:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 rgb(var(--ink));
+  }
+  .btn-primary:disabled,
+  .btn-ghost:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
   }
   .input {
-    @apply w-full rounded-lg px-3.5 py-2.5 text-sm text-ink outline-none transition placeholder:text-faint;
+    @apply w-full text-ink outline-none placeholder:text-faint;
+    font-size: 16px; /* 16px 未満だと iPhone が入力時に拡大する */
+    font-weight: 500;
+    border-radius: 12px;
+    padding: 0.6rem 0.8rem;
     background: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
+    border: 2px solid rgb(var(--ink));
   }
   .input:focus {
-    border-color: rgb(var(--primary) / 0.7);
-    box-shadow: 0 0 0 3px rgb(var(--primary) / 0.12);
+    box-shadow: 3px 3px 0 rgb(var(--accent));
   }
   .chip {
-    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+    @apply inline-flex items-center gap-1 text-xs font-bold;
+    border-radius: 999px;
+    padding: 0.15rem 0.6rem;
+    border: 1.5px solid rgb(var(--ink));
+  }
+  /* 見出し用の太い書体 */
+  .display {
+    font-family: var(--font-display), var(--font-body), sans-serif;
+    letter-spacing: 0.01em;
+  }
+  /* 少し傾けたラベル */
+  .sticker {
+    @apply inline-block text-[11px] font-black;
+    font-family: var(--font-display), var(--font-body), sans-serif;
+    border-radius: 8px;
+    padding: 0.1rem 0.5rem;
+    border: 2px solid rgb(var(--ink));
+    transform: rotate(-3deg);
   }
   .section-label {
-    @apply text-xs font-semibold uppercase tracking-wider text-faint;
-  }
-  .stat-card {
-    @apply rounded-xl p-4 shadow-card;
-    background: rgb(var(--surface));
-    border: 1px solid rgb(var(--border));
+    @apply text-sm font-black text-ink;
+    font-family: var(--font-display), var(--font-body), sans-serif;
   }
 }

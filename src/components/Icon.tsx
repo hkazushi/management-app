@@ -24,9 +24,44 @@ type IconName =
   | "mic"
   | "stop"
   | "copy"
-  | "doc";
+  | "doc"
+  | "home"
+  | "gift"
+  | "coin"
+  | "left"
+  | "right"
+  | "piggy";
 
 const paths: Record<IconName, React.ReactNode> = {
+  home: (
+    <>
+      <path d="M3 11.5 12 4l9 7.5" />
+      <path d="M5.5 10v9.5h13V10" />
+      <path d="M10 19.5v-5h4v5" />
+    </>
+  ),
+  gift: (
+    <>
+      <rect x="3.5" y="9" width="17" height="4" rx="1" />
+      <path d="M5.5 13v7h13v-7" />
+      <path d="M12 9v11" />
+      <path d="M12 9c-1.5-4.5-6-4-5 0M12 9c1.5-4.5 6-4 5 0" />
+    </>
+  ),
+  coin: (
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M9 8.5 12 12l3-3.5M12 12v4.5M9.5 12.5h5M9.5 15h5" />
+    </>
+  ),
+  left: <path d="M14.5 5.5 8 12l6.5 6.5" />,
+  right: <path d="M9.5 5.5 16 12l-6.5 6.5" />,
+  piggy: (
+    <>
+      <path d="M4 12.5c0-3.6 3.4-6 7.5-6 1.6 0 3 .3 4.2.9L18.5 6v3c1 .9 1.6 2 1.8 3.2H22v3h-2.2c-.5.9-1.2 1.6-2.1 2.2V20h-3v-1.5h-4V20h-3v-2.6C5.3 16.3 4 14.6 4 12.5Z" />
+      <circle cx="15.5" cy="11.5" r=".6" fill="currentColor" />
+    </>
+  ),
   mic: (
     <>
       <rect x="9" y="3" width="6" height="11" rx="3" />

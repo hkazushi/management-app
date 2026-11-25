@@ -1,22 +1,32 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Dela_Gothic_One, Zen_Maru_Gothic } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
+// 見出しは極太のデラゴシック、本文は丸ゴシック。日本語の書体は大きいので先読みしない。
+const display = Dela_Gothic_One({
+  weight: "400",
   subsets: ["latin"],
-  variable: "--font-inter",
+  variable: "--font-display",
   display: "swap",
+  preload: false,
+});
+const body = Zen_Maru_Gothic({
+  weight: ["500", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-body",
+  display: "swap",
+  preload: false,
 });
 
 export const metadata: Metadata = {
-  title: "議事録",
-  description: "打ち合わせを録音すると、文字起こし・要約・宿題の抽出まで行う個人用アプリ",
+  title: "ふたり手帖",
+  description: "2人で使う、予定・欲しいもの・お金の手帖",
 };
 
-// スマホで録音する前提。端末幅に追従させる。
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  themeColor: "#FFF4E0",
 };
 
 export default function RootLayout({
@@ -25,7 +35,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={inter.variable}>
+    <html lang="ja" className={`${display.variable} ${body.variable}`}>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );

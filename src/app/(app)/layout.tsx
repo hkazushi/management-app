@@ -11,25 +11,30 @@ export default function AppLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-dvh pb-24">
-      <header className="sticky top-0 z-20 border-b border-border bg-bg">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
+    <div className="min-h-dvh pb-28">
+      <header className="sticky top-0 z-20 border-b-2 border-ink bg-bg">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-2.5">
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-white">
-              <Icon name="mic" size={16} />
+            <span className="flex h-8 w-8 -rotate-6 items-center justify-center rounded-lg border-2 border-ink bg-sun text-ink shadow-hard-sm">
+              <span className="display text-[15px] leading-none">ふ</span>
             </span>
-            <span className="text-[15px] font-bold tracking-tight text-ink">
-              議事録
-            </span>
+            <span className="display text-[17px] text-ink">ふたり手帖</span>
           </Link>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1.5">
+            <Link
+              href="/settings"
+              aria-label="設定"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-ink bg-surface text-ink shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
+            >
+              <Icon name="settings" size={17} />
+            </Link>
             <form action={logout}>
               <button
                 type="submit"
-                className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted transition hover:bg-black/5 hover:text-danger"
+                aria-label="ロックする"
+                className="flex h-9 w-9 items-center justify-center rounded-xl border-2 border-ink bg-surface text-ink shadow-hard-sm active:translate-x-0.5 active:translate-y-0.5 active:shadow-none"
               >
-                <Icon name="lock" size={15} />
-                ロック
+                <Icon name="lock" size={17} />
               </button>
             </form>
           </div>
