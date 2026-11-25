@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { DEFAULT_COLOR, onColor } from "@/lib/colors";
 import { fmtTimeRange } from "@/lib/format";
-import { getMembers, whoOf } from "@/lib/members";
+import { getMembers, whoOf, currentUserId } from "@/lib/members";
 import { headers } from "next/headers";
 import { CopyField } from "@/components/CopyField";
 import { addPreset, createFeed, deleteFeed, deletePreset, updateMe } from "./actions";
@@ -17,21 +17,19 @@ export default async function SettingsPage() {
   const [
     members,
     pRes,
-    {
-      data: { user },
-    },
+    userId,
     fRes,
     hdrs,
   ] = await Promise.all([
     getMembers(supabase),
     supabase.from("event_presets").select("id,title,start_time,end_time,member_id,color,sort").order("sort", { ascending: true }),
-    supabase.auth.getUser(),
+    currentUserId(supabase),
     supabase.from("calendar_feeds").select("token").maybeSingle(),
     headers(),
   ]);
   const presets = (pRes.data as unknown as EventPreset[] | null) ?? [];
-  const me = members.find((m) => m.user_id === user?.id);
-  const other = members.find((m) => m.user_id !== user?.id);
+  const me = members.find((m) => m.user_id === userId);
+  const other = members.find((m) => m.user_id !== userId);
   // 外に出す URL（自分の分。RLS で自分の行しか返らない）
   const token = (fRes.data as unknown as { token: string } | null)?.token ?? null;
   const host = hdrs.get("x-forwarded-host") ?? hdrs.get("host") ?? "";

@@ -29,10 +29,11 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // getUser() は毎回サーバーに検証を投げる（getSession より安全）。間に処理を挟まないこと。
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // getClaims() は、セッションの署名をこの場で検証する（公開鍵は一度取ったら使い回す）。
+  // getUser() と違って毎回 Supabase まで往復しないので速い。期限切れのときは中で更新される。
+  // 署名を確かめない getSession() の結果は信用しないこと。間に処理を挟まないこと。
+  const { data } = await supabase.auth.getClaims();
+  const user = data?.claims ?? null;
 
   const path = request.nextUrl.pathname;
   const isAuthRoute = path.startsWith("/login");
