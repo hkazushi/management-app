@@ -67,6 +67,8 @@
 - 見出しと金額は `.display`（明朝＋欧文セリフ）。深い色の面に置く文字は生成り（`text-[#FAF4E4]`）、強調は金（`text-sun`）。
 - 色を足すときは `globals.css` の変数 → `tailwind.config.ts` の順にそろえる。予定に付けられる色は `src/lib/colors.ts`。
 - 入力欄の文字は 16px 以上（それ未満だと iPhone が入力時に画面を拡大する）。
+- 季節の飾りは `src/components/Season.tsx`。ふだんは CSS で隠してあり、`<html class="xmas">` のときだけ出る。
+  期間を変えるときは同ファイルの `XMAS_FROM` / `XMAS_TO`。新しい季節を足すときも、同じ「class で出し分ける」形にする。
 - 案内役の絵は `src/components/Meerkat.tsx`（`stand` / `peek`）と `src/components/Manul.tsx`（`sit` / `peek`）。手書きの SVG。
 
 ### 仕様変更は spec.md にも反映する

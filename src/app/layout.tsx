@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Shippori_Mincho_B1, Zen_Kaku_Gothic_New } from "next/font/google";
+import { SeasonScript, Snow } from "@/components/Season";
 import "./globals.css";
 
 // 見出しは明朝、本文は細身のゴシック、数字と英字はセリフ体。日本語の書体は大きいので先読みしない。
@@ -49,8 +50,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ja" className={`${display.variable} ${body.variable} ${latin.variable}`}>
-      <body className="font-sans antialiased">{children}</body>
+    <html lang="ja" className={`${display.variable} ${body.variable} ${latin.variable}`} suppressHydrationWarning>
+      <head>
+        <SeasonScript />
+      </head>
+      <body className="font-sans antialiased">
+        {children}
+        <Snow />
+      </body>
     </html>
   );
 }

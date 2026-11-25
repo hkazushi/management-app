@@ -28,6 +28,12 @@ function Head({ cx, cy }: { cx: number; cy: number }) {
         <circle cx="-9.4" cy="-4.2" r="1" fill="#FFFDF8" />
         <circle cx="11.6" cy="-4.2" r="1" fill="#FFFDF8" />
       </g>
+      {/* サンタ帽（クリスマスの期間だけ出る） */}
+      <g className="xmas-hat">
+        <path d="M-17-21C-13-40 1-51 17-46c-4 3-5 9-3 15l3 9Z" fill="#B3263A" />
+        <rect x="-20" y="-27" width="40" height="8.5" rx="4.2" fill="#FFFDF8" />
+        <circle cx="18" cy="-46" r="4.8" fill="#FFFDF8" />
+      </g>
       {/* 鼻と口 */}
       <path d="M-3.6 9.5c0-2 1.6-3 3.6-3s3.6 1 3.6 3c0 1.8-2 3.2-3.6 3.2S-3.6 11.3-3.6 9.5Z" fill={PATCH} />
       <path d="M0 12.5v3M0 15.5c-1.5 1.8-3.5 1.8-4.8.6M0 15.5c1.5 1.8 3.5 1.8 4.8.6" fill="none" stroke={PATCH} strokeWidth="1.1" strokeLinecap="round" />
@@ -54,7 +60,7 @@ export function Meerkat({
 }) {
   if (variant === "peek") {
     return (
-      <svg viewBox="0 0 120 70" className={className} aria-hidden="true">
+      <svg viewBox="0 0 120 70" className={`overflow-visible ${className}`} aria-hidden="true">
         <Head cx={60} cy={34} />
         {/* 縁にかけた手 */}
         <ellipse cx="34" cy="64" rx="9" ry="7" fill={FUR_DARK} />
@@ -64,7 +70,7 @@ export function Meerkat({
     );
   }
   return (
-    <svg viewBox="0 0 120 200" className={className} aria-hidden="true">
+    <svg viewBox="0 0 120 200" className={`overflow-visible ${className}`} aria-hidden="true">
       {/* しっぽ（ゆれる） */}
       <g className="mascot-tail">
         <path d="M78 168c14 2 26-2 30-14" fill="none" stroke={FUR_DARK} strokeWidth="7" strokeLinecap="round" />

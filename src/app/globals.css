@@ -290,3 +290,115 @@ body {
     animation: none !important;
   }
 }
+
+/* ---------- クリスマス（<html class="xmas"> のあいだだけ。期間は src/components/Season.tsx） ---------- */
+
+/* ふだんは隠しておくもの */
+.snow,
+.garland,
+.snowcap,
+.xmas-hat,
+.xmas-only {
+  display: none;
+}
+.xmas .snow,
+.xmas .garland,
+.xmas .snowcap,
+.xmas .xmas-only {
+  display: block;
+}
+.xmas .xmas-hat {
+  display: inline;
+}
+
+/* 背景：雪の結晶の柄と、上の両すみに緑と赤のにじみ */
+.xmas body {
+  background-image:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='150' height='150' viewBox='0 0 150 150'%3E%3Cg fill='none' stroke='%23C9A862' stroke-width='1' stroke-linecap='round' opacity='.34'%3E%3Cg transform='translate(38 40)'%3E%3Cpath d='M0-13v26M-11.3-6.5l22.6 13M-11.3 6.5l22.6-13M0-13l-3 3M0-13l3 3M0 13l-3-3M0 13l3-3M-11.3-6.5l1 4M-11.3-6.5l4-1M11.3 6.5l-1-4M11.3 6.5l-4 1M-11.3 6.5l4 1M-11.3 6.5l1-4M11.3-6.5l-4-1M11.3-6.5l-1 4'/%3E%3C/g%3E%3Cg transform='translate(112 108) scale(.62)'%3E%3Cpath d='M0-13v26M-11.3-6.5l22.6 13M-11.3 6.5l22.6-13'/%3E%3C/g%3E%3C/g%3E%3Cg fill='%23C9A862' opacity='.32'%3E%3Ccircle cx='104' cy='30' r='1.4'/%3E%3Ccircle cx='24' cy='112' r='1.4'/%3E%3Ccircle cx='70' cy='78' r='1'/%3E%3Ccircle cx='136' cy='64' r='1'/%3E%3C/g%3E%3C/svg%3E"),
+    radial-gradient(70% 38% at 0% 0%, rgb(20 70 58 / 0.16), transparent 70%),
+    radial-gradient(70% 38% at 100% 0%, rgb(155 44 58 / 0.14), transparent 70%),
+    radial-gradient(120% 60% at 50% 0%, rgb(255 253 248 / 0.9), transparent 70%);
+  background-attachment: fixed;
+}
+
+/* 雪 */
+.snow {
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  overflow: hidden;
+  pointer-events: none;
+}
+.snow i {
+  position: absolute;
+  top: -14px;
+  border-radius: 50%;
+  background: #fff;
+  /* 生成りの地の上でも見えるよう、うすい青の輪郭を付ける */
+  box-shadow:
+    0 0 0 1px rgb(120 145 170 / 0.28),
+    0 0 6px rgb(255 255 255 / 0.95);
+  animation: snow-fall linear infinite;
+  will-change: transform;
+}
+@keyframes snow-fall {
+  0% { transform: translate3d(0, -6vh, 0); }
+  50% { transform: translate3d(var(--sway, 20px), 52vh, 0); }
+  100% { transform: translate3d(0, 110vh, 0); }
+}
+
+/* 電飾：線と電球を横にくり返す。2層を交互に光らせる */
+.garland {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  height: 20px;
+  pointer-events: none;
+}
+.garland span {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat-x;
+  background-size: 96px 20px;
+  animation: garland-blink 1.8s ease-in-out infinite;
+}
+.garland-a {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='20' viewBox='0 0 96 20'%3E%3Cpath d='M0 1q24 12 48 0t48 0' fill='none' stroke='%231B2420' stroke-width='1' opacity='.55'/%3E%3Ccircle cx='12' cy='7' r='3.2' fill='%23B3263A'/%3E%3Ccircle cx='60' cy='7' r='3.2' fill='%2314463A'/%3E%3C/svg%3E");
+}
+.garland-b {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='20' viewBox='0 0 96 20'%3E%3Ccircle cx='36' cy='7' r='3.2' fill='%23E2B84B'/%3E%3Ccircle cx='84' cy='7' r='3.2' fill='%23E2B84B'/%3E%3C/svg%3E");
+  animation-delay: 0.9s;
+}
+@keyframes garland-blink {
+  0%, 100% { opacity: 1; filter: drop-shadow(0 0 4px rgb(255 220 140 / 0.9)); }
+  50% { opacity: 0.35; filter: none; }
+}
+
+/* 見出しの上に積もった雪 */
+.snowcap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1px;
+  width: 100%;
+  height: 13px;
+  filter: drop-shadow(0 1px 1px rgb(40 60 80 / 0.25));
+  pointer-events: none;
+}
+/* 帽子のぶん、のぞく2匹の場所を少し下げる */
+.xmas .page-title { padding-top: 3.9rem; }
+.xmas .page-title > .mascot-peek { top: 1.1rem; }
+
+/* ツリーの飾りがまたたく */
+.twinkle { animation: twinkle 1.6s ease-in-out infinite; }
+.twinkle-late { animation-delay: 0.8s; }
+@keyframes twinkle {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .snow i, .garland span, .twinkle { animation: none !important; }
+  .xmas .snow { display: none; }
+}

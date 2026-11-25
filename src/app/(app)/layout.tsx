@@ -4,6 +4,7 @@ import { Icon } from "@/components/Icon";
 import { Cheer } from "@/components/Cheer";
 import { MascotScene } from "@/components/MascotScene";
 import { Meerkat } from "@/components/Meerkat";
+import { Garland } from "@/components/Season";
 import { logout } from "./actions";
 
 // 認証済みエリアの共通シェル。未ログインの遮断は middleware が担うため、
@@ -43,6 +44,7 @@ export default function AppLayout({
             </form>
           </div>
         </div>
+        <Garland />
       </header>
 
       <main className="mx-auto w-full max-w-3xl px-3.5 py-4 sm:px-4 sm:py-5">
