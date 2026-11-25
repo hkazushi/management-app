@@ -111,4 +111,6 @@ export type ExternalEvent = {
   calendar_name: string | null;
   author_name?: string | null; // TimeTree でその予定を入れた人（0012 以降）
   label_color?: string | null; // TimeTree 上の色
+  recurring?: boolean; // くり返しの予定か（0014 以降）
+  delete_requested_at?: string | null; // 「消す」と頼んだ時刻（0014 以降）
 };

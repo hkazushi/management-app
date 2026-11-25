@@ -13,6 +13,8 @@
 //   - ふたり手帖で直せば TimeTree も直し、消せば TimeTree も消す（対応表 timetree_links で追いかける）
 //   - 自分が書き込んだ予定は、読み取りのときには取り込まない（二重に出さない）
 //   - 1回の実行で新しく入れるのは最大 20 件（何かの間違いで大量に入るのを防ぐ）
+//   - ふたり手帖で「消す」と頼まれた TimeTree の予定（external_events.delete_requested_at）を、TimeTree から消す。
+//     くり返しの予定は全部消えてしまうので消さない
 //
 // 大事なこと:
 //   - TimeTree には公式の連携手段が無い（API は 2023-12-22 に終了）。これは TimeTree の Web 版と同じ通信を
@@ -315,7 +317,8 @@ export function toRows(ev, calendarName, from, to, lookup = {}) {
   // 誰が入れたか（メンバー名）と、TimeTree 上の色
   const author_name = lookup.users?.get(String(ev.author_id)) ?? null;
   const label_color = lookup.labels?.get(Number(ev.label_id)) ?? null;
-  return rows.map((r) => ({ ...r, memo, calendar_name: calendarName, author_name, label_color }));
+  const recurring = (ev.recurrences ?? []).some((r) => /^RRULE/i.test(r));
+  return rows.map((r) => ({ ...r, memo, calendar_name: calendarName, author_name, label_color, recurring }));
 }
 
 // ---------- ふたり手帖（Supabase） ----------
@@ -481,6 +484,54 @@ async function main() {
       console.log(msg);
       log(`OK ${msg}`);
     }
+    // ---------- ふたり手帖から「消す」と頼まれた TimeTree の予定 ----------
+    let requests = [];
+    try {
+      requests = await rest(
+        "GET",
+        `external_events?select=uid,calendar_name&source=eq.timetree&user_id=eq.${app.MANAGEMENT_USER_ID}&delete_requested_at=not.is.null`,
+        null,
+        "return=representation",
+      );
+    } catch {
+      // 0014 がまだ無い DB では、この機能は動かない
+    }
+    const asked = new Map(requests.map((r) => [r.uid.split(":")[0], r.calendar_name]));
+    if (asked.size > 0 && dry) console.log(`（試し読み）TimeTree から消す依頼: ${asked.size} 件`);
+    if (asked.size > 0 && !dry) {
+      let removed = 0;
+      let refused = 0;
+      await withSession(conf, async (sid) => {
+        const csrf = await csrfToken(sid);
+        const cache = new Map(); // カレンダーごとの予定（くり返しかどうかを確かめる）
+        for (const [uuid, calName] of asked) {
+          const filter = `external_events?source=eq.timetree&user_id=eq.${app.MANAGEMENT_USER_ID}&uid=like.${uuid}:*`;
+          try {
+            const cal = active.find((c) => c.name === calName);
+            if (!cal) throw new Error(`カレンダー「${calName}」が見つかりません`);
+            if (!cache.has(cal.id)) cache.set(cal.id, await fetchEvents(sid, cal.id));
+            const ev = cache.get(cal.id).find((e) => e.uuid === uuid || e.id === uuid);
+            if (ev && (ev.recurrences ?? []).some((r) => /^RRULE/i.test(r))) {
+              // くり返しは全部消えてしまうので消さない。依頼を取り下げる
+              await rest("PATCH", filter, { delete_requested_at: null });
+              refused += 1;
+              continue;
+            }
+            if (ev && !ev.deactivated_at) {
+              await ttWrite(sid, csrf, "DELETE", `calendar/${cal.id}/event/${ev.id ?? uuid}`);
+            }
+            await rest("DELETE", filter);
+            removed += 1;
+          } catch (e) {
+            log(`NG TimeTree から消す ${e instanceof Error ? e.message : e}`);
+          }
+        }
+      });
+      const msg = `TimeTree から消しました: ${removed} 件${refused ? `（くり返しのため消さなかった: ${refused} 件）` : ""}`;
+      console.log(msg);
+      log(`OK ${msg}`);
+    }
+
     // 自分が書き込んだ予定は、読み取りで取り込まない
     const now = await rest("GET", "timetree_links?select=timetree_event_id", null, "return=representation");
     for (const l of now) written.add(l.timetree_event_id);
@@ -522,9 +573,10 @@ async function main() {
       await rest(
         "POST",
         "external_events?on_conflict=user_id,source,uid",
-        list.slice(i, i + 500).map(({ author_name, label_color, ...r }) => ({
+        list.slice(i, i + 500).map(({ author_name, label_color, recurring, ...r }) => ({
           ...r,
-          ...(withAuthor ? { author_name, label_color } : {}),
+          ...(withAuthor >= 1 ? { author_name, label_color } : {}),
+          ...(withAuthor >= 2 ? { recurring } : {}),
           user_id: uid,
           source: "timetree",
           shared,
@@ -534,15 +586,19 @@ async function main() {
       );
     }
   };
+  // 列が足りない古い DB でも動くよう、新しい列から順に抜いて試す（2: 0014 まで / 1: 0012 まで / 0: 0011 のみ）
   let colored = true;
-  try {
-    await upsert(true);
-  } catch (e) {
-    // 0012（作成者・色の列）がまだ無い DB では、その2つを抜いて入れる
-    if (!/author_name|label_color/.test(String(e?.message))) throw e;
-    colored = false;
-    await upsert(false);
+  let level = 2;
+  for (;;) {
+    try {
+      await upsert(level);
+      break;
+    } catch (e) {
+      if (level === 0 || !/author_name|label_color|recurring/.test(String(e?.message))) throw e;
+      level -= 1;
+    }
   }
+  colored = level >= 1;
   await rest("DELETE", `external_events?user_id=eq.${uid}&source=eq.timetree&synced_at=lt.${encodeURIComponent(stamp)}`);
   console.log(`取り込みました。${summary}${shared ? "・もう1人にも表示" : "・自分だけに表示"}`);
   if (!colored) console.log("（人ごとの色分けには、supabase/migrations/0012_external_author.sql の実行が必要です）");
