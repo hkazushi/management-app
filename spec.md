@@ -116,6 +116,10 @@ RLS は2種類ある。
   追加・保存のあとに跳ねて一言出す（`src/lib/cheer.ts` → `src/components/Cheer.tsx`）、
   各ページの下の舞台でミーアキャットが歩く（`src/components/MascotScene.tsx`）、読み込み中にのぞく。
   動きの定義は `globals.css` の `.mascot-*`。「視差効果を減らす」設定の端末では動かさない。
+- **季節の飾り（クリスマス）**：日本時間の 11月25日〜12月25日のあいだだけ、自動で出る。期間が過ぎると元に戻る。
+  雪が降る、背景に雪の結晶の柄、ヘッダーの下にまたたく電飾、見出しの上に積もった雪、2匹のサンタ帽、ページ下のツリー。
+  部品と期間は `src/components/Season.tsx`、見た目は `globals.css` の「クリスマス」の節。
+  `<html>` に `class="xmas"` が付いているあいだだけ表示する仕組みで、付け外しはブラウザ側で日付を見て行う。
 - 絵文字は使わない。
 - 色と部品の定義は `src/app/globals.css` と `tailwind.config.ts`、予定に付ける色の一覧は `src/lib/colors.ts`。
 

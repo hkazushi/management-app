@@ -1,5 +1,6 @@
 import { Manul } from "./Manul";
 import { Meerkat } from "./Meerkat";
+import { SnowCap } from "./Season";
 
 // ページの見出し。深い色の面に、明朝の大きな題と、金の細線の飾り。右上からミーアキャットかマヌルネコがのぞく。
 export function PageTitle({
@@ -16,7 +17,7 @@ export function PageTitle({
   children?: React.ReactNode; // 右側に置くもの（月の切り替えなど）
 }) {
   return (
-    <div className="relative overflow-y-clip pt-11">
+    <div className="page-title relative overflow-y-clip pt-11">
       {mascot === "manul" ? (
         <Manul variant="peek" className="mascot-peek absolute right-6 top-0 z-0 h-[64px] w-auto" />
       ) : (
@@ -30,6 +31,7 @@ export function PageTitle({
           ))}
         </svg>
         <span className="pointer-events-none absolute inset-[5px] rounded-[20px] border border-sun/40" aria-hidden="true" />
+        <SnowCap />
         <span className="sticker relative opacity-80">{label}</span>
         <div className="relative mt-2 flex items-end justify-between gap-3">
           <h1 className="display min-w-0 text-[26px] leading-tight sm:text-[30px]">{title}</h1>

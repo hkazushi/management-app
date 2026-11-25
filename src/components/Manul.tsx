@@ -35,6 +35,12 @@ function Face({ cx, cy }: { cx: number; cy: number }) {
       <path d="M-13 12c0-7 6-10 13-10s13 3 13 10c0 6-6 11-13 11s-13-5-13-11Z" fill={FUR_LIGHT} />
       {/* ほおの縞 */}
       <path d="M-27 3c-6 1-11 4-15 8M-25 9c-5 2-9 5-12 9M27 3c6 1 11 4 15 8M25 9c5 2 9 5 12 9" fill="none" stroke={STRIPE} strokeWidth="2" strokeLinecap="round" />
+      {/* サンタ帽（クリスマスの期間だけ出る） */}
+      <g className="xmas-hat">
+        <path d="M-17-30C-13-48 1-58 17-53c-4 3-5 9-3 15l3 9Z" fill="#B3263A" />
+        <rect x="-20" y="-36" width="40" height="8.5" rx="4.2" fill="#FFFDF8" />
+        <circle cx="18" cy="-53" r="4.8" fill="#FFFDF8" />
+      </g>
       {/* 目（丸い瞳）と、むすっとした上まぶた */}
       <g className="mascot-blink mascot-slow">
         <circle cx="-15" cy="-3" r="7" fill={EYE} />
@@ -64,7 +70,7 @@ export function Manul({
 }) {
   if (variant === "peek") {
     return (
-      <svg viewBox="0 0 120 70" className={className} aria-hidden="true">
+      <svg viewBox="0 0 120 70" className={`overflow-visible ${className}`} aria-hidden="true">
         <Face cx={60} cy={40} />
         <ellipse cx="34" cy="65" rx="10" ry="7" fill={FUR_DARK} />
         <ellipse cx="86" cy="65" rx="10" ry="7" fill={FUR_DARK} />
@@ -72,7 +78,7 @@ export function Manul({
     );
   }
   return (
-    <svg viewBox="0 0 160 170" className={className} aria-hidden="true">
+    <svg viewBox="0 0 160 170" className={`overflow-visible ${className}`} aria-hidden="true">
       {/* しっぽ（太くて輪の模様） */}
       <g className="mascot-tail mascot-slow">
         <path d="M112 142c22 6 38-4 36-22" fill="none" stroke={FUR} strokeWidth="18" strokeLinecap="round" />

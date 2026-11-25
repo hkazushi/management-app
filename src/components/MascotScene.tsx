@@ -1,5 +1,6 @@
 import { Manul } from "./Manul";
 import { Meerkat } from "./Meerkat";
+import { Tree } from "./Season";
 
 // 肉球のあしあと
 function Paw({ className = "" }: { className?: string }) {
@@ -25,6 +26,7 @@ export function MascotScene() {
             <Paw key={i} className={`h-3 w-3 ${i % 2 ? "-translate-y-1.5 rotate-12" : "-rotate-12"}`} />
           ))}
         </div>
+        <Tree className="absolute bottom-[5px] right-4 h-[78px] w-auto" />
         <Manul className="absolute bottom-[5px] left-3 h-[62px] w-auto" />
         <div className="mascot-walk absolute bottom-[5px] left-0 w-max">
           <Meerkat className="mascot-step h-[84px] w-auto" />
