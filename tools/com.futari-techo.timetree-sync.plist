@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- TimeTree の「家族」を30分おきに読み取り、ふたり手帖に見るだけの予定として入れる（macOS の自動実行）。
+     入れる:  cp tools/com.futari-techo.timetree-sync.plist ~/Library/LaunchAgents/ && launchctl load ~/Library/LaunchAgents/com.futari-techo.timetree-sync.plist
+     止める:  launchctl unload ~/Library/LaunchAgents/com.futari-techo.timetree-sync.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>com.futari-techo.timetree-sync</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/opt/homebrew/bin/node</string>
+    <string>/Users/kazushi/bin/timetree-sync</string>
+  </array>
+  <key>StartInterval</key><integer>1800</integer>
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/kazushi/.config/futari-techo/timetree-sync.out</string>
+  <key>StandardErrorPath</key><string>/Users/kazushi/.config/futari-techo/timetree-sync.out</string>
+</dict>
+</plist>

@@ -221,7 +221,7 @@ export function occurrences(startDate, recurrences, from, to) {
 }
 
 // TimeTree の予定1件を、ふたり手帖の行（1日1行）に直す
-export function toRows(ev, calendarName, from, to) {
+export function toRows(ev, calendarName, from, to, lookup = {}) {
   if (!ev || ev.deactivated_at || ev.category === 2 || !ev.title || typeof ev.start_at !== "number") return []; // 2 はメモ
   const rows = [];
   if (ev.all_day) {
@@ -246,7 +246,10 @@ export function toRows(ev, calendarName, from, to) {
     }
   }
   const memo = [ev.location, ev.note].filter((x) => typeof x === "string" && x.trim()).join(" / ").slice(0, 300) || null;
-  return rows.map((r) => ({ ...r, memo, calendar_name: calendarName }));
+  // 誰が入れたか（メンバー名）と、TimeTree 上の色
+  const author_name = lookup.users?.get(String(ev.author_id)) ?? null;
+  const label_color = lookup.labels?.get(Number(ev.label_id)) ?? null;
+  return rows.map((r) => ({ ...r, memo, calendar_name: calendarName, author_name, label_color }));
 }
 
 // ---------- ふたり手帖（Supabase） ----------
@@ -299,7 +302,17 @@ async function main() {
   const rows = new Map();
   for (const cal of targets) {
     const events = await withSession(conf, (sid) => fetchEvents(sid, cal.id));
-    for (const ev of events) for (const r of toRows(ev, cal.name, from, to)) rows.set(r.uid, r);
+    // メンバーの ID → 名前、ラベルの ID → 色
+    const lookup = {
+      users: new Map((cal.calendar_users ?? []).map((u) => [String(u.user_id ?? u.id), u.name]).filter(([, n]) => n)),
+      labels: new Map(
+        (cal.calendar_labels ?? []).map((l) => [
+          Number(l.id),
+          typeof l.color === "number" ? `#${l.color.toString(16).padStart(6, "0")}` : /^#[0-9a-f]{6}$/i.test(l.color ?? "") ? l.color : null,
+        ]),
+      ),
+    };
+    for (const ev of events) for (const r of toRows(ev, cal.name, from, to, lookup)) rows.set(r.uid, r);
   }
   const list = [...rows.values()];
   const summary = `${targets.map((c) => c.name).join("・")}: ${list.length} 件（${from} 〜 ${to}）`;
@@ -311,16 +324,35 @@ async function main() {
   const shared = /^(true|1|yes)$/i.test(conf.TIMETREE_SHARED || "");
   const stamp = new Date().toISOString();
   // 入れて（同じ予定は上書き）、今回出てこなかった古い行を消す
-  for (let i = 0; i < list.length; i += 500) {
-    await rest(
-      "POST",
-      "external_events?on_conflict=user_id,source,uid",
-      list.slice(i, i + 500).map((r) => ({ ...r, user_id: uid, source: "timetree", shared, synced_at: stamp })),
-      "resolution=merge-duplicates,return=minimal",
-    );
+  const upsert = async (withAuthor) => {
+    for (let i = 0; i < list.length; i += 500) {
+      await rest(
+        "POST",
+        "external_events?on_conflict=user_id,source,uid",
+        list.slice(i, i + 500).map(({ author_name, label_color, ...r }) => ({
+          ...r,
+          ...(withAuthor ? { author_name, label_color } : {}),
+          user_id: uid,
+          source: "timetree",
+          shared,
+          synced_at: stamp,
+        })),
+        "resolution=merge-duplicates,return=minimal",
+      );
+    }
+  };
+  let colored = true;
+  try {
+    await upsert(true);
+  } catch (e) {
+    // 0012（作成者・色の列）がまだ無い DB では、その2つを抜いて入れる
+    if (!/author_name|label_color/.test(String(e?.message))) throw e;
+    colored = false;
+    await upsert(false);
   }
   await rest("DELETE", `external_events?user_id=eq.${uid}&source=eq.timetree&synced_at=lt.${encodeURIComponent(stamp)}`);
   console.log(`取り込みました。${summary}${shared ? "・もう1人にも表示" : "・自分だけに表示"}`);
+  if (!colored) console.log("（人ごとの色分けには、supabase/migrations/0012_external_author.sql の実行が必要です）");
   log(`OK ${summary}`);
 }
 

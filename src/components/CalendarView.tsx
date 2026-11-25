@@ -6,7 +6,7 @@ import { addEvents, deleteBatch, deleteEvent, updateEvent, type EventInput } fro
 import { DEFAULT_COLOR, PALETTE, onColor } from "@/lib/colors";
 import { addDays, daysInMonth, fmtDayLong, fmtTimeRange, weekdayOf, yen } from "@/lib/format";
 import { cheer } from "@/lib/cheer";
-import { whoOf } from "@/lib/members";
+import { externalColor, whoOf } from "@/lib/members";
 import { WhoSelect } from "./Fields";
 import { Icon } from "./Icon";
 import { Manul } from "./Manul";
@@ -228,14 +228,18 @@ export function CalendarView({
                     {e.title}
                   </span>
                 ))}
-                {extShown.map((e) => (
-                  <span
-                    key={e.id}
-                    className={`overflow-hidden whitespace-nowrap rounded-[4px] border border-dashed border-ink/35 px-[2px] text-[10px] leading-[14px] text-muted sm:truncate sm:px-1 sm:text-[11px] ${inMonth ? "" : "opacity-50"}`}
-                  >
-                    {e.title}
-                  </span>
-                ))}
+                {extShown.map((e) => {
+                  const c = externalColor(members, e);
+                  return (
+                    <span
+                      key={e.id}
+                      className={`overflow-hidden whitespace-nowrap rounded-[4px] px-[3px] text-[10px] font-bold leading-[15px] sm:truncate sm:px-1 sm:text-[11px] ${inMonth ? "" : "opacity-50"}`}
+                      style={{ background: c, color: onColor(c) }}
+                    >
+                      {e.title}
+                    </span>
+                  );
+                })}
                 {hidden > 0 && <span className="text-[10px] font-bold leading-none text-muted">+{hidden}</span>}
               </button>
             );
@@ -354,12 +358,13 @@ export function CalendarView({
             </li>
           ))}
           {dayExternals.map((e) => (
-            <li key={e.id} className="flex items-stretch overflow-hidden rounded-2xl border border-dashed border-ink/30 bg-bg/60">
-              <span className="w-1.5 shrink-0 bg-faint" />
+            <li key={e.id} className="flex items-stretch overflow-hidden rounded-2xl border border-line bg-surface shadow-hard-sm">
+              <span className="w-1.5 shrink-0" style={{ background: externalColor(members, e) }} />
               <div className="min-w-0 flex-1 px-3.5 py-2.5">
                 <p className="text-[15px] font-bold leading-snug text-ink">{e.title}</p>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
                   {e.start_time && <span className="font-bold">{fmtTimeRange(e.start_time, e.end_time)}</span>}
+                  {e.author_name && <span>{e.author_name}</span>}
                   <span className="chip bg-line/50 !py-0 text-muted">TimeTree{e.calendar_name ? `・${e.calendar_name}` : ""}</span>
                   {e.memo && <span>{e.memo}</span>}
                 </p>
