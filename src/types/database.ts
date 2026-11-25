@@ -47,7 +47,6 @@ export type FixedCost = {
   name: string;
   amount: number;
   due_day: number; // 1〜31（31 は月末扱い）
-  member_id: string | null;
   memo: string | null;
   active: boolean;
 };
@@ -64,7 +63,6 @@ export type Income = {
   id: string;
   name: string;
   amount: number;
-  member_id: string | null;
   active: boolean;
 };
 
@@ -80,7 +78,6 @@ export type SavingsGoal = {
   name: string;
   target: number | null;
   monthly: number;
-  member_id: string | null;
   active: boolean;
 };
 

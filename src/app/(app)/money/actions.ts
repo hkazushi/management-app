@@ -34,7 +34,6 @@ function fixedFields(formData: FormData) {
     name: text(formData.get("name")),
     amount: num(formData.get("amount")),
     due_day: day && day >= 1 && day <= 31 ? day : null,
-    member_id: text(formData.get("member_id")) || null,
     memo: text(formData.get("memo")) || null,
   };
 }
@@ -74,7 +73,6 @@ function incomeFields(formData: FormData) {
   return {
     name: text(formData.get("name")),
     amount: num(formData.get("amount")),
-    member_id: text(formData.get("member_id")) || null,
   };
 }
 
@@ -117,7 +115,6 @@ function goalFields(formData: FormData) {
     name: text(formData.get("name")),
     target: num(formData.get("target")),
     monthly: num(formData.get("monthly")) ?? 0,
-    member_id: text(formData.get("member_id")) || null,
   };
 }
 

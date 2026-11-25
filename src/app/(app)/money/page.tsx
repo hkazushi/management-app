@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/ActionForm";
-import { WhoChip } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
 import { Meerkat } from "@/components/Meerkat";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
@@ -20,58 +19,49 @@ const STATUS_TONE = {
 } as const;
 
 // お金：その月の「使えるお金」、固定費の支払い、収入、貯金。
-// ?who= で、全部／ふたりの分（shared）／それぞれの分 に切り替える。
-export default async function MoneyPage({ searchParams }: { searchParams: Promise<{ m?: string; who?: string }> }) {
-  const { m, who: whoParam } = await searchParams;
+// ここに出るのは自分の分だけ（DB 側で本人の行しか返らない）。相手のお金は見えない。
+export default async function MoneyPage({ searchParams }: { searchParams: Promise<{ m?: string }> }) {
+  const { m } = await searchParams;
   const today = todayJST();
   const thisMonth = today.slice(0, 7);
   const month = isMonth(m) ? m : thisMonth;
   const supabase = await createClient();
 
-  const [members, cRes, pRes, iRes, aRes, gRes, eRes] = await Promise.all([
+  const [
+    members,
+    {
+      data: { user },
+    },
+    cRes,
+    pRes,
+    iRes,
+    aRes,
+    gRes,
+    eRes,
+  ] = await Promise.all([
     getMembers(supabase),
-    supabase.from("fixed_costs").select("id,name,amount,due_day,member_id,memo,active"),
+    supabase.auth.getUser(),
+    supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active"),
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
-    supabase.from("incomes").select("id,name,amount,member_id,active").eq("active", true).order("created_at", { ascending: true }),
+    supabase.from("incomes").select("id,name,amount,active").eq("active", true).order("created_at", { ascending: true }),
     supabase.from("income_actuals").select("id,income_id,month,amount").eq("month", month),
-    supabase.from("savings_goals").select("id,name,target,monthly,member_id,active").eq("active", true).order("created_at", { ascending: true }),
+    supabase.from("savings_goals").select("id,name,target,monthly,active").eq("active", true).order("created_at", { ascending: true }),
     supabase.from("savings_entries").select("id,goal_id,amount,date,memo").order("created_at", { ascending: false }).limit(2000),
   ]);
-  // 誰の分を見るか。"" は全部、"shared" は「ふたり」として登録した分、それ以外はその人の分
-  const who = whoParam === "shared" || members.some((x) => x.user_id === whoParam) ? (whoParam as string) : "";
-  const mine = <T extends { member_id: string | null }>(rows: T[]): T[] =>
-    who === "" ? rows : rows.filter((r) => (who === "shared" ? r.member_id === null : r.member_id === who));
-  const allCosts = (cRes.data as unknown as FixedCost[] | null) ?? [];
-  const allIncomes = (iRes.data as unknown as Income[] | null) ?? [];
-  const allGoals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
-  const costs = mine(allCosts);
+  const costs = (cRes.data as unknown as FixedCost[] | null) ?? [];
   const payments = (pRes.data as unknown as FixedPayment[] | null) ?? [];
-  const incomes = mine(allIncomes);
+  const incomes = (iRes.data as unknown as Income[] | null) ?? [];
   const actuals = (aRes.data as unknown as IncomeActual[] | null) ?? [];
-  const goals = mine(allGoals);
+  const goals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
   const entries = (eRes.data as unknown as SavingsEntry[] | null) ?? [];
-  const person = members.find((x) => x.user_id === who);
-  const scopeName = who === "" ? "" : who === "shared" ? "ふたりの" : `${person?.name ?? ""}さんの`;
-  // 月や人を変えても、もう一方の選択を保つ
-  const href = (next: { m?: string; who?: string }) => {
-    const mm = next.m ?? (month === thisMonth ? "" : month);
-    const ww = next.who ?? who;
-    const q = [mm ? `m=${mm}` : "", ww ? `who=${ww}` : ""].filter(Boolean).join("&");
-    return q ? `/money?${q}` : "/money";
-  };
-  const scopes = [
-    { value: "", label: "ぜんぶ", color: null as string | null },
-    { value: "shared", label: "ふたり", color: "#C9A862" },
-    ...members.map((x) => ({ value: x.user_id, label: x.name, color: x.color as string | null })),
-  ];
 
+  const me = members.find((x) => x.user_id === user?.id);
   const lines = fixedLines(costs, payments, month, today);
   const sum = monthSummary(lines, incomes, actuals, goals, month);
   const totals = savingsTotals(entries, month);
   const actualOf = new Map(actuals.map((a) => [a.income_id, a.amount]));
   const paidCount = lines.filter((l) => l.payment).length;
-  const empty = allCosts.length === 0 && allIncomes.length === 0 && allGoals.length === 0;
-  const settingsHref = person ? `/money/settings?who=${person.user_id}` : "/money/settings";
+  const empty = costs.length === 0 && incomes.length === 0 && goals.length === 0;
 
   const navBtn =
     "flex h-9 w-9 items-center justify-center rounded-full border border-sun/50 bg-[#FAF4E4]/10 text-[#FAF4E4] active:scale-95";
@@ -80,15 +70,15 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
     <section className="space-y-5">
       <PageTitle title={fmtMonth(month)} label="MONEY" tone="bg-primary text-[#FAF4E4]">
         <div className="flex shrink-0 items-center gap-1.5">
-          <Link href={href({ m: shiftMonth(month, -1) })} aria-label="前の月" className={navBtn}>
+          <Link href={`/money?m=${shiftMonth(month, -1)}`} aria-label="前の月" className={navBtn}>
             <Icon name="left" size={18} />
           </Link>
           {month !== thisMonth && (
-            <Link href={who ? `/money?who=${who}` : "/money"} className={`${navBtn} !w-auto px-3 text-xs font-bold`}>
+            <Link href="/money" className={`${navBtn} !w-auto px-3 text-xs font-bold`}>
               今月
             </Link>
           )}
-          <Link href={href({ m: shiftMonth(month, 1) })} aria-label="次の月" className={navBtn}>
+          <Link href={`/money?m=${shiftMonth(month, 1)}`} aria-label="次の月" className={navBtn}>
             <Icon name="right" size={18} />
           </Link>
         </div>
@@ -100,32 +90,17 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
         </p>
       )}
 
-      {/* 誰の分を見るか */}
-      {!empty && (
-        <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="誰のお金を見るか">
-          {scopes.map((sc) => (
-            <Link
-              key={sc.value}
-              href={href({ who: sc.value })}
-              role="tab"
-              aria-selected={who === sc.value}
-              className={`flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-bold transition ${
-                who === sc.value ? "border-primary bg-primary text-[#FAF4E4]" : "border-line bg-surface text-muted"
-              }`}
-            >
-              {sc.color && <span className="h-2.5 w-2.5 rounded-full" style={{ background: sc.color }} />}
-              {sc.label}
-            </Link>
-          ))}
-        </div>
-      )}
+      <p className="flex items-center gap-1.5 text-xs text-muted">
+        <Icon name="lock" size={13} />
+        このページは{me ? `${me.name}さん` : "自分"}だけに見えます。相手のお金は見えません。
+      </p>
 
       {empty && !cRes.error ? (
         <div className="card flex flex-col items-center space-y-3 p-6 text-center">
           <Meerkat className="h-28 w-auto" />
           <p className="display text-xl">まずは設定から</p>
           <p className="text-sm leading-relaxed text-muted">毎月の収入・固定費・貯金の目標を登録すると、ここに「使えるお金」と支払いの予定が出ます。</p>
-          <Link href={settingsHref} className="btn-primary">
+          <Link href="/money/settings" className="btn-primary">
             <Icon name="settings" size={16} />
             お金の設定をひらく
           </Link>
@@ -135,7 +110,7 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
           {/* 使えるお金 */}
           <div className="card overflow-hidden">
             <div className={`px-5 py-5 ${sum.free < 0 ? "bg-danger text-white" : "bg-accent text-[#FAF4E4]"}`}>
-              <p className="text-xs font-bold opacity-80">{scopeName}この月に自由に使えるお金</p>
+              <p className="text-xs font-bold opacity-80">{me ? `${me.name}さんが` : ""}この月に自由に使えるお金</p>
               <p className={`display mt-1.5 text-[44px] leading-none ${sum.free < 0 ? "" : "text-sun"}`}>{yen(sum.free)}</p>
             </div>
             <dl className="grid grid-cols-3 divide-x divide-line border-t border-line text-center">
@@ -192,7 +167,6 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
                       <p className={`truncate text-[15px] font-bold ${l.payment ? "line-through" : ""}`}>{l.cost.name}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs font-bold text-muted">
                         <span>{fmtDay(l.due)}まで</span>
-                        <WhoChip members={members} memberId={l.cost.member_id} />
                         {month === thisMonth || l.status === "paid" || l.status === "overdue" ? (
                           <span className={`chip ${STATUS_TONE[l.status]}`}>{statusLabel(l)}</span>
                         ) : null}
@@ -218,7 +192,6 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
                     <li key={i.id} className="rounded-2xl border border-line bg-surface px-3 py-2.5">
                       <div className="flex items-center gap-2">
                         <p className="min-w-0 flex-1 truncate text-[15px] font-bold">{i.name}</p>
-                        <WhoChip members={members} memberId={i.member_id} />
                         <p className="display shrink-0 text-base">{yen(actual ?? i.amount)}</p>
                       </div>
                       <details className="mt-1">
@@ -259,9 +232,6 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
                             <Icon name="piggy" size={18} />
                             <span className="truncate">{g.name}</span>
                           </p>
-                          <div className="mt-1">
-                            <WhoChip members={members} memberId={g.member_id} />
-                          </div>
                         </div>
                         <p className="shrink-0 text-right">
                           <span className="display block text-2xl leading-none">{yen(t.total)}</span>
@@ -334,9 +304,9 @@ export default async function MoneyPage({ searchParams }: { searchParams: Promis
             )}
           </div>
 
-          <Link href={settingsHref} className="btn-ghost w-full">
+          <Link href="/money/settings" className="btn-ghost w-full">
             <Icon name="settings" size={16} />
-            {person ? `${person.name}さんの収入・固定費・貯金を追加・変更` : "収入・固定費・貯金を追加・変更"}
+            収入・固定費・貯金を追加・変更
           </Link>
         </>
       )}

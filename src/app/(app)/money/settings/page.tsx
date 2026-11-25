@@ -1,11 +1,9 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ActionForm } from "@/components/ActionForm";
-import { WhoChip, WhoSelect } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { yen } from "@/lib/format";
-import { getMembers } from "@/lib/members";
 import {
   addFixed,
   addGoal,
@@ -18,7 +16,7 @@ import {
   updateGoal,
   updateIncome,
 } from "../actions";
-import type { FixedCost, Income, Member, SavingsGoal } from "@/types/database";
+import type { FixedCost, Income, SavingsGoal } from "@/types/database";
 
 const dayLabel = (d: number) => (d >= 31 ? "月末" : `${d}日`);
 
@@ -35,7 +33,7 @@ function DaySelect({ defaultValue }: { defaultValue?: number }) {
   );
 }
 
-function FixedFields({ members, cost, who }: { members: Member[]; cost?: FixedCost; who?: string }) {
+function FixedFields({ cost }: { cost?: FixedCost }) {
   return (
     <>
       <input name="name" required defaultValue={cost?.name} placeholder="名前（家賃・スマホ・サブスクなど）" className="input" />
@@ -44,22 +42,20 @@ function FixedFields({ members, cost, who }: { members: Member[]; cost?: FixedCo
         <DaySelect defaultValue={cost?.due_day} />
       </div>
       <input name="memo" defaultValue={cost?.memo ?? ""} placeholder="メモ（引き落とし口座など）" className="input" />
-      <WhoSelect members={members} defaultValue={cost?.member_id ?? who} />
     </>
   );
 }
 
-function IncomeFields({ members, income, who }: { members: Member[]; income?: Income; who?: string }) {
+function IncomeFields({ income }: { income?: Income }) {
   return (
     <>
       <input name="name" required defaultValue={income?.name} placeholder="名前（給料など）" className="input" />
       <input name="amount" required inputMode="numeric" defaultValue={income?.amount} placeholder="毎月の金額（手取り）" className="input" />
-      <WhoSelect members={members} defaultValue={income?.member_id ?? who} />
     </>
   );
 }
 
-function GoalFields({ members, goal, who }: { members: Member[]; goal?: SavingsGoal; who?: string }) {
+function GoalFields({ goal }: { goal?: SavingsGoal }) {
   return (
     <>
       <input name="name" required defaultValue={goal?.name} placeholder="名前（旅行・引っ越し・もしもの時など）" className="input" />
@@ -67,7 +63,6 @@ function GoalFields({ members, goal, who }: { members: Member[]; goal?: SavingsG
         <input name="target" inputMode="numeric" defaultValue={goal?.target ?? ""} placeholder="目標額（なくてもOK）" className="input" />
         <input name="monthly" inputMode="numeric" defaultValue={goal?.monthly || ""} placeholder="毎月ためる額" className="input" />
       </div>
-      <WhoSelect members={members} defaultValue={goal?.member_id ?? who} />
     </>
   );
 }
@@ -75,26 +70,21 @@ function GoalFields({ members, goal, who }: { members: Member[]; goal?: SavingsG
 const rowClass = "rounded-2xl border border-line bg-surface px-3 py-2.5";
 const summaryClass = "cursor-pointer text-[11px] font-bold text-muted";
 
-// お金の設定：毎月の収入・固定費・貯金の目標を登録する
-export default async function MoneySettingsPage({ searchParams }: { searchParams: Promise<{ who?: string }> }) {
-  // お金の画面で人を選んでから来たときは、追加フォームの「誰の」をその人にしておく
-  const { who: whoParam } = await searchParams;
+// お金の設定：自分の毎月の収入・固定費・貯金の目標を登録する（相手には見えない）
+export default async function MoneySettingsPage() {
   const supabase = await createClient();
-  const [members, cRes, iRes, gRes] = await Promise.all([
-    getMembers(supabase),
-    supabase.from("fixed_costs").select("id,name,amount,due_day,member_id,memo,active").order("due_day", { ascending: true }),
-    supabase.from("incomes").select("id,name,amount,member_id,active").order("created_at", { ascending: true }),
-    supabase.from("savings_goals").select("id,name,target,monthly,member_id,active").order("created_at", { ascending: true }),
+  const [cRes, iRes, gRes] = await Promise.all([
+    supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active").order("due_day", { ascending: true }),
+    supabase.from("incomes").select("id,name,amount,active").order("created_at", { ascending: true }),
+    supabase.from("savings_goals").select("id,name,target,monthly,active").order("created_at", { ascending: true }),
   ]);
   const costs = (cRes.data as unknown as FixedCost[] | null) ?? [];
   const incomes = (iRes.data as unknown as Income[] | null) ?? [];
   const goals = (gRes.data as unknown as SavingsGoal[] | null) ?? [];
-  const who = members.some((m) => m.user_id === whoParam) ? whoParam : undefined;
-  const back = who ? `/money?who=${who}` : "/money";
 
   return (
     <section className="space-y-6">
-      <Link href={back} className="inline-flex items-center gap-1 text-sm font-bold text-ink">
+      <Link href="/money" className="inline-flex items-center gap-1 text-sm font-bold text-ink">
         <Icon name="left" size={16} />
         お金にもどる
       </Link>
@@ -108,13 +98,12 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
             <li key={i.id} className={rowClass}>
               <div className="flex items-center gap-2">
                 <p className="min-w-0 flex-1 truncate text-[15px] font-bold">{i.name}</p>
-                <WhoChip members={members} memberId={i.member_id} />
                 <p className="display shrink-0">{yen(i.amount)}</p>
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・消す</summary>
                 <ActionForm action={updateIncome.bind(null, i.id)} keep className="mt-2 space-y-2">
-                  <IncomeFields members={members} income={i} />
+                  <IncomeFields income={i} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
                   </button>
@@ -129,7 +118,7 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
           ))}
         </ul>
         <ActionForm action={addIncome} className="card space-y-2 p-4">
-          <IncomeFields members={members} who={who} />
+          <IncomeFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />
             収入を追加
@@ -151,13 +140,12 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
                     {c.memo ? `・${c.memo}` : ""}
                   </p>
                 </div>
-                <WhoChip members={members} memberId={c.member_id} />
                 <p className="display shrink-0">{yen(c.amount)}</p>
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・止める・消す</summary>
                 <ActionForm action={updateFixed.bind(null, c.id)} keep className="mt-2 space-y-2">
-                  <FixedFields members={members} cost={c} />
+                  <FixedFields cost={c} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
                   </button>
@@ -179,7 +167,7 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
           ))}
         </ul>
         <ActionForm action={addFixed} className="card space-y-2 p-4">
-          <FixedFields members={members} who={who} />
+          <FixedFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />
             固定費を追加
@@ -201,12 +189,11 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
                     {g.monthly ? `・毎月 ${yen(g.monthly)}` : ""}
                   </p>
                 </div>
-                <WhoChip members={members} memberId={g.member_id} />
               </div>
               <details className="mt-1">
                 <summary className={summaryClass}>直す・消す</summary>
                 <ActionForm action={updateGoal.bind(null, g.id)} keep className="mt-2 space-y-2">
-                  <GoalFields members={members} goal={g} />
+                  <GoalFields goal={g} />
                   <button type="submit" className="btn-ghost w-full">
                     保存
                   </button>
@@ -221,7 +208,7 @@ export default async function MoneySettingsPage({ searchParams }: { searchParams
           ))}
         </ul>
         <ActionForm action={addGoal} className="card space-y-2 p-4">
-          <GoalFields members={members} who={who} />
+          <GoalFields />
           <button type="submit" className="btn-primary w-full">
             <Icon name="plus" size={16} />
             貯金の目標を追加

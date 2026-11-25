@@ -12,7 +12,7 @@ import { fixedLines, monthSummary, statusLabel } from "@/lib/money";
 import { payFixed } from "./money/actions";
 import type { EventRow, FixedCost, FixedPayment, Income, IncomeActual, SavingsGoal, Wish } from "@/types/database";
 
-// ホーム：今日からの予定、近い支払い、今月使えるお金、欲しいもの
+// ホーム：今日からの予定、近い支払い、今月使えるお金、欲しいもの。お金まわりは自分の分だけが出る。
 export default async function HomePage() {
   const supabase = await createClient();
   const today = todayJST();
@@ -40,11 +40,11 @@ export default async function HomePage() {
       .gte("date", today)
       .lte("date", weekEnd)
       .order("date", { ascending: true }),
-    supabase.from("fixed_costs").select("id,name,amount,due_day,member_id,memo,active"),
+    supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active"),
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
-    supabase.from("incomes").select("id,name,amount,member_id,active").eq("active", true),
+    supabase.from("incomes").select("id,name,amount,active").eq("active", true),
     supabase.from("income_actuals").select("id,income_id,month,amount").eq("month", month),
-    supabase.from("savings_goals").select("id,name,target,monthly,member_id,active").eq("active", true),
+    supabase.from("savings_goals").select("id,name,target,monthly,active").eq("active", true),
     supabase
       .from("wishes")
       .select("id,title,url,price,memo,member_id,done,done_at,created_at")
@@ -65,17 +65,6 @@ export default async function HomePage() {
   const sum = monthSummary(lines, incomes, (aRes.data as unknown as IncomeActual[] | null) ?? [], goals, month);
   const wishes = (wRes.data as unknown as Wish[] | null) ?? [];
   const me = members.find((m) => m.user_id === user?.id);
-  // 自分の名前で登録した分だけの「使えるお金」
-  const mySum = me
-    ? monthSummary(
-        lines.filter((l) => l.cost.member_id === me.user_id),
-        incomes.filter((i) => i.member_id === me.user_id),
-        (aRes.data as unknown as IncomeActual[] | null) ?? [],
-        goals.filter((g) => g.member_id === me.user_id),
-        month,
-      )
-    : null;
-  const hasMine = !!me && (incomes.some((i) => i.member_id === me.user_id) || lines.some((l) => l.cost.member_id === me.user_id));
 
   // 期限が7日以内、または過ぎているのに払っていないもの
   const urgent = lines.filter((l) => l.status === "overdue" || l.status === "today" || l.status === "soon");
@@ -190,15 +179,9 @@ export default async function HomePage() {
       {hasMoney && (
         <Link href="/money" className="block overflow-hidden rounded-[22px] border border-line shadow-hard">
           <div className={`px-5 py-4 ${sum.free < 0 ? "bg-danger text-white" : "bg-accent text-[#FAF4E4]"}`}>
-            <p className="text-xs font-bold opacity-80">今月、ふたり合わせて自由に使えるお金</p>
+            <p className="text-xs font-bold opacity-80">今月、自分が自由に使えるお金（自分だけに表示）</p>
             <p className="display mt-1 text-[36px] leading-none text-sun">{yen(sum.free)}</p>
           </div>
-          {hasMine && mySum && me && (
-            <p className="flex items-center justify-between border-t border-line bg-surface px-5 py-2.5 text-xs font-bold text-ink">
-              <span>うち {me.name}さんの分</span>
-              <span className="display text-lg">{yen(mySum.free)}</span>
-            </p>
-          )}
           <p className="flex items-center justify-between border-t border-line bg-surface px-4 py-2 text-xs font-bold text-ink">
             <span>
               {unpaid.length > 0 ? `固定費 のこり${unpaid.length}件（${yen(sum.unpaid)}）` : lines.length > 0 ? "今月の固定費はぜんぶ支払い済み" : "固定費は未登録"}

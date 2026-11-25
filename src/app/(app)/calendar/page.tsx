@@ -22,7 +22,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     getMembers(supabase),
     supabase.from("events").select("id,date,title,start_time,end_time,member_id,color,memo,batch_id").gte("date", from).lte("date", to),
     supabase.from("event_presets").select("id,title,start_time,end_time,member_id,color,sort").order("sort", { ascending: true }),
-    supabase.from("fixed_costs").select("id,name,amount,due_day,member_id,memo,active").eq("active", true),
+    supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active").eq("active", true),
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
   ]);
   const events = (eRes.data as unknown as EventRow[] | null) ?? [];
