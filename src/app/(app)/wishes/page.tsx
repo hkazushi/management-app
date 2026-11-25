@@ -6,7 +6,7 @@ import { Icon } from "@/components/Icon";
 import { Manul } from "@/components/Manul";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
 import { yen } from "@/lib/format";
-import { getMembers } from "@/lib/members";
+import { getMembers, whoOf } from "@/lib/members";
 import { addWish, deleteWish, toggleWish, updateWish } from "./actions";
 import type { Member, Wish } from "@/types/database";
 
@@ -20,7 +20,11 @@ function hostOf(url: string): string {
 }
 
 // カードごとに地の色を少しずつ変える
-const TONES = ["bg-pink/60", "bg-mint/60", "bg-sky/60", "bg-lilac/60", "bg-sun/25"];
+// カードの地色は「誰の」で決める（その人の色を薄くのせる。ふたりのものは金）
+const tint = (color: string) => ({
+  backgroundColor: `color-mix(in srgb, ${color} 15%, #FBF7EE)`,
+  borderColor: `color-mix(in srgb, ${color} 40%, #FBF7EE)`,
+});
 
 function WishFields({ members, wish, compact = false }: { members: Member[]; wish?: Wish; compact?: boolean }) {
   const more = (
@@ -174,10 +178,11 @@ export default async function WishesPage({
           </div>
         ) : (
           <ul className="grid gap-3 sm:grid-cols-2">
-            {open.map((w, i) => (
+            {open.map((w) => (
               <li
                 key={w.id}
-                className={`rounded-2xl border border-line p-3 shadow-hard ${TONES[i % TONES.length]}`}
+                className="rounded-2xl border p-3 shadow-hard"
+                style={tint(whoOf(members, w.member_id).color)}
               >
                 <div className="flex items-start gap-2">
                   <form action={toggleWish.bind(null, w.id, true)}>
