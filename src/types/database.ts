@@ -99,3 +99,14 @@ export type OneOff = {
   paid_at: string | null;
   memo: string | null;
 };
+
+// ほかのカレンダー（TimeTree）から読み取った予定。見るだけ
+export type ExternalEvent = {
+  id: string;
+  date: string;
+  title: string;
+  start_time: string | null;
+  end_time: string | null;
+  memo: string | null;
+  calendar_name: string | null;
+};

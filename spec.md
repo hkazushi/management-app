@@ -87,6 +87,7 @@ AI は使っていない（環境変数 `ANTHROPIC_API_KEY` は以前のアプ�
 | `savings_goals` / `savings_entries` | 貯金の目標 / 出し入れ |
 | `one_offs` | 単発の出費・収入 |
 | `calendar_feeds` | 予定を外に出すための合言葉（1人1つ） |
+| `external_events` | TimeTree から読み取った予定（見るだけ。0011） |
 
 RLS は2種類ある。
 
@@ -135,7 +136,20 @@ TimeTree の公式 API は 2023-12-22 に終了しているため、直接は書
 - iPhone では `webcal://` のリンクで照会カレンダーとして追加する。TimeTree には、設定の「外部カレンダーの表示」で
   iPhone のカレンダーを出す形で表示する（見るだけ。本人の端末にだけ出て、TimeTree の共有相手には出ない）。
 - 反映の間隔は読む側のアプリ次第（数時間かかることがある）。
-- TimeTree の予定をこのアプリに取り込むのは未対応（公式の出力手段が無い）。
+- TimeTree の予定を取り込むのは、次の「7.1」の非公式な読み取りで行う。
+
+### 7.1 TimeTree の予定を読み取る（非公式・見るだけ）
+
+- このMacで動く `tools/timetree-sync.mjs`（設置先 `~/bin/timetree-sync`）が、TimeTree の Web 版と同じ通信で
+  指定したカレンダー（例: 家族）を読み、`external_events` を入れ替える。**TimeTree 側には何も書き込まない**。
+- TimeTree のメールアドレスとパスワードは、このMacの `~/.config/futari-techo/timetree.env` にだけ置く。
+  サーバーや DB には送らない。ログインは使い回す（`timetree-session.json`）。
+- 取り込む範囲は 31日前〜366日先。終日・複数日・時刻つき（日本時間に直す）・くり返し
+  （毎日／毎週／毎月／毎年、間隔・回数・終了日・除外日）に対応。「第2月曜」のような指定と、くり返しの1回だけの変更は正確でないことがある。
+- 画面では、カレンダーとホームに点線の枠で「TimeTree・家族」と出る。編集・削除はできない。
+- 見える範囲は、取り込んだ本人だけ（`TIMETREE_SHARED=true` にすると、もう1人にも見える）。
+- 外に出す iCal（7章）には含めない（TimeTree に戻って二重に出るのを防ぐ）。
+- 公式の手段ではないので、TimeTree の仕様変更で突然動かなくなることがある。失敗は `~/.config/futari-techo/timetree-sync.log` に残る。
 
 ## 8. スマホでの使い方
 

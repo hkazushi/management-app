@@ -10,7 +10,7 @@ import { whoOf } from "@/lib/members";
 import { WhoSelect } from "./Fields";
 import { Icon } from "./Icon";
 import { Manul } from "./Manul";
-import type { EventPreset, EventRow, Member } from "@/types/database";
+import type { EventPreset, EventRow, ExternalEvent, Member } from "@/types/database";
 
 export type DueMark = { date: string; name: string; amount: number; paid: boolean };
 
@@ -67,6 +67,7 @@ export function CalendarView({
   today,
   initial,
   events,
+  externals = [],
   presets,
   members,
   dues,
@@ -75,6 +76,7 @@ export function CalendarView({
   today: string;
   initial?: string;
   events: EventRow[];
+  externals?: ExternalEvent[]; // TimeTree から読み取った予定（見るだけ）
   presets: EventPreset[];
   members: Member[];
   dues: DueMark[];
@@ -104,6 +106,14 @@ export function CalendarView({
     }
     return map;
   }, [events]);
+  const extByDate = useMemo(() => {
+    const map = new Map<string, ExternalEvent[]>();
+    for (const e of externals) map.set(e.date, [...(map.get(e.date) ?? []), e]);
+    for (const list of map.values()) {
+      list.sort((a, b) => (a.start_time ?? "").localeCompare(b.start_time ?? "") || a.title.localeCompare(b.title, "ja"));
+    }
+    return map;
+  }, [externals]);
   const dueByDate = useMemo(() => {
     const map = new Map<string, DueMark[]>();
     for (const d of dues) map.set(d.date, [...(map.get(d.date) ?? []), d]);
@@ -145,6 +155,7 @@ export function CalendarView({
   const single = !multi && selected.length === 1 ? selected[0] : null;
   const dayEvents = single ? (byDate.get(single) ?? []) : [];
   const dayDues = single ? (dueByDate.get(single) ?? []) : [];
+  const dayExternals = single ? (extByDate.get(single) ?? []) : [];
 
   return (
     <div className="space-y-5">
@@ -162,7 +173,11 @@ export function CalendarView({
             const inMonth = date.startsWith(month);
             const isSelected = selected.includes(date);
             const list = byDate.get(date) ?? [];
+            const ext = extByDate.get(date) ?? [];
             const due = dueByDate.get(date) ?? [];
+            // マスに出せるのは2件まで。自分たちの予定を先に、残りの枠に TimeTree の予定
+            const extShown = ext.slice(0, Math.max(0, 2 - list.length));
+            const hidden = list.length + ext.length - Math.min(2, list.length) - extShown.length;
             const wd = i % 7;
             return (
               <button
@@ -213,7 +228,15 @@ export function CalendarView({
                     {e.title}
                   </span>
                 ))}
-                {list.length > 2 && <span className="text-[10px] font-bold leading-none text-muted">+{list.length - 2}</span>}
+                {extShown.map((e) => (
+                  <span
+                    key={e.id}
+                    className={`overflow-hidden whitespace-nowrap rounded-[4px] border border-dashed border-ink/35 px-[2px] text-[10px] leading-[14px] text-muted sm:truncate sm:px-1 sm:text-[11px] ${inMonth ? "" : "opacity-50"}`}
+                  >
+                    {e.title}
+                  </span>
+                ))}
+                {hidden > 0 && <span className="text-[10px] font-bold leading-none text-muted">+{hidden}</span>}
               </button>
             );
           })}
@@ -244,7 +267,7 @@ export function CalendarView({
         </p>
       )}
 
-      {single && (dayEvents.length > 0 || dayDues.length > 0) && (
+      {single && (dayEvents.length > 0 || dayDues.length > 0 || dayExternals.length > 0) && (
         <ul className="space-y-2">
           {dayDues.map((d) => (
             <li key={d.name} className="flex items-center gap-2.5 rounded-2xl border border-line bg-surface px-3.5 py-2.5">
@@ -330,9 +353,22 @@ export function CalendarView({
               )}
             </li>
           ))}
+          {dayExternals.map((e) => (
+            <li key={e.id} className="flex items-stretch overflow-hidden rounded-2xl border border-dashed border-ink/30 bg-bg/60">
+              <span className="w-1.5 shrink-0 bg-faint" />
+              <div className="min-w-0 flex-1 px-3.5 py-2.5">
+                <p className="text-[15px] font-bold leading-snug text-ink">{e.title}</p>
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-xs text-muted">
+                  {e.start_time && <span className="font-bold">{fmtTimeRange(e.start_time, e.end_time)}</span>}
+                  <span className="chip bg-line/50 !py-0 text-muted">TimeTree{e.calendar_name ? `・${e.calendar_name}` : ""}</span>
+                  {e.memo && <span>{e.memo}</span>}
+                </p>
+              </div>
+            </li>
+          ))}
         </ul>
       )}
-      {single && dayEvents.length === 0 && dayDues.length === 0 && (
+      {single && dayEvents.length === 0 && dayDues.length === 0 && dayExternals.length === 0 && (
         <div className="flex items-center justify-center gap-3 rounded-2xl border border-dashed border-line px-4 py-3">
           <Manul variant="peek" className="h-9 w-auto" />
           <p className="text-sm text-muted">この日の予定はまだありません</p>

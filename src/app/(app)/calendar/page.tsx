@@ -5,7 +5,7 @@ import { Icon } from "@/components/Icon";
 import { PageTitle } from "@/components/PageTitle";
 import { addDays, dueDate, fmtMonth, isDate, isMonth, shiftMonth, todayJST } from "@/lib/format";
 import { getMembers } from "@/lib/members";
-import type { EventPreset, EventRow, FixedCost, FixedPayment, OneOff } from "@/types/database";
+import type { EventPreset, EventRow, ExternalEvent, FixedCost, FixedPayment, OneOff } from "@/types/database";
 
 // カレンダー：月の予定を見る・足す。固定費の支払日も印で出す。
 export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ m?: string; d?: string }> }) {
@@ -18,14 +18,17 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   // 前後の月にはみ出す週の分も取る
   const from = addDays(`${month}-01`, -7);
   const to = addDays(`${shiftMonth(month, 1)}-01`, 7);
-  const [members, eRes, pRes, cRes, payRes, oRes] = await Promise.all([
+  const [members, eRes, pRes, cRes, payRes, oRes, xRes] = await Promise.all([
     getMembers(supabase),
     supabase.from("events").select("id,date,title,start_time,end_time,member_id,color,memo,batch_id").gte("date", from).lte("date", to),
     supabase.from("event_presets").select("id,title,start_time,end_time,member_id,color,sort").order("sort", { ascending: true }),
     supabase.from("fixed_costs").select("id,name,amount,due_day,memo,active").eq("active", true),
     supabase.from("fixed_payments").select("id,fixed_cost_id,month,amount,paid_at").eq("month", month),
     supabase.from("one_offs").select("id,kind,name,amount,date,paid_at,memo").eq("kind", "expense").gte("date", from).lte("date", to),
+    // TimeTree から読み取った予定（テーブルがまだ無ければ空）
+    supabase.from("external_events").select("id,date,title,start_time,end_time,memo,calendar_name").gte("date", from).lte("date", to),
   ]);
+  const externals = (xRes.data as unknown as ExternalEvent[] | null) ?? [];
   const events = (eRes.data as unknown as EventRow[] | null) ?? [];
   const presets = (pRes.data as unknown as EventPreset[] | null) ?? [];
   const costs = (cRes.data as unknown as FixedCost[] | null) ?? [];
@@ -67,7 +70,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           データベースの準備が終わっていません。Supabase の SQL Editor で supabase/migrations/0008_home.sql を実行してください。
         </p>
       ) : (
-        <CalendarView key={month} month={month} today={today} initial={isDate(d) && d.startsWith(month) ? d : undefined} events={events} presets={presets} members={members} dues={dues} />
+        <CalendarView key={month} month={month} today={today} initial={isDate(d) && d.startsWith(month) ? d : undefined} events={events} externals={externals} presets={presets} members={members} dues={dues} />
       )}
     </section>
   );
