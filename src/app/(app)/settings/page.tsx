@@ -3,7 +3,6 @@ import { ActionForm } from "@/components/ActionForm";
 import { ColorPick, WhoSelect } from "@/components/Fields";
 import { Icon } from "@/components/Icon";
 import { PageTitle, SectionTitle } from "@/components/PageTitle";
-import { PushToggle } from "@/components/PushToggle";
 import { DEFAULT_COLOR, onColor } from "@/lib/colors";
 import { fmtTimeRange } from "@/lib/format";
 import { getMembers, whoOf, currentUserId } from "@/lib/members";
@@ -115,15 +114,6 @@ export default async function SettingsPage() {
             よく使う予定に追加
           </button>
         </ActionForm>
-      </div>
-
-      <div id="push" className="scroll-mt-20 space-y-3">
-        <SectionTitle tone="bg-sun">毎朝の通知</SectionTitle>
-        <p className="text-xs leading-relaxed text-muted">
-          毎朝7時台に、今日の天気と気温（東京）、今日の予定、今日が支払い日のものを通知します。
-          支払いは自分の分だけが出ます。通知は端末ごとの設定です。
-        </p>
-        <PushToggle vapidKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? ""} />
       </div>
 
       <div id="feed" className="scroll-mt-20 space-y-3">
